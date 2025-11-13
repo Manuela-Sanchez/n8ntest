@@ -1,0 +1,434 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"triggerAtHour": 17}]
+        }
+      },
+      "id": "1a9c61a1-5d25-4ee8-9cf1-819fcaaeb9f7",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [-896, 96],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1XQk9WMJmc_MdXTTWBmznP-8QezVS7NOm",
+          "mode": "list",
+          "cachedResultName": "CV_Dante del Hierro.pdf"
+        },
+        "options": {}
+      },
+      "id": "310fa824-806d-46e5-887d-4f78c0f6e77f",
+      "name": "Descargar CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [-704, 96],
+      "typeVersion": 3,
+      "credentials": {"googleDriveOAuth2Api": {"id": "cZq85rnYyHHJkoNr", "name": "Google Drive Credencial"}}
+    },
+    {
+      "parameters": {"operation": "pdf", "options": {}},
+      "id": "5ef14507-8c8d-47ff-852d-9c86e979230c",
+      "name": "Extraer Texto CV",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [-496, 96],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "documentId": {"__rl": true, "value": "16eYfcLGp03QRlTjIS0dKK8KxHTPfQZ8xJeTuR2XmXrk", "mode": "id"},
+        "sheetName": {"__rl": true, "value": "gid=0", "mode": "id"},
+        "options": {}
+      },
+      "id": "6811b244-d77e-473c-a84f-52bafea62cae",
+      "name": "Leer Filtros",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-304, 96],
+      "typeVersion": 4.6,
+      "credentials": {"googleSheetsOAuth2Api": {"id": "yzM5JeYm9ty2sTXa", "name": "Google Sheets Tareas AV"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "let url = 'https://www.linkedin.com/jobs/search/?f_TPR=r86400';\nconst keyword = $input.first().json.Keyword || '';\nconst location = $input.first().json.Location || '';\nif (keyword) url += `&keywords=${encodeURIComponent(keyword)}`;\nif (location) url += `&location=${encodeURIComponent(location)}`;\nreturn { json: { linkedin_url: url, keyword, location, source: 'linkedin' } };"
+      },
+      "id": "5563ddbe-46b0-422d-9a88-443fb70ad3eb",
+      "name": "Crear URL LinkedIn",
+      "type": "n8n-nodes-base.code",
+      "position": [-96, -16],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const keyword = $input.first().json.Keyword || 'developer';\nconst location = $input.first().json.Location || 'Spain';\nreturn { json: { query: keyword, keyword, location, source: 'jsearch' } };"
+      },
+      "id": "a307767b-0ed6-4a9a-ad84-a2bf2cbace39",
+      "name": "Preparar JSearch",
+      "type": "n8n-nodes-base.code",
+      "position": [-96, 192],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {"url": "={{ $json.linkedin_url }}", "options": {}},
+      "id": "5c045316-78ab-41a7-95f0-976e6712a07a",
+      "name": "Buscar en LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [112, -16],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://jsearch.p.rapidapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "query", "value": "={{ $json.query }}"},
+            {"name": "page", "value": "1"},
+            {"name": "num_pages", "value": "1"},
+            {"name": "date_posted", "value": "all"},
+            {"name": "remote_jobs_only", "value": "false"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "x-rapidapi-key", "value": "76e9313aaamsh0b0ec96dda5c0b0p1072bajsn06ddbcd47497"},
+            {"name": "x-rapidapi-host", "value": "jsearch.p.rapidapi.com"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "0d6010ac-d906-4ac9-8f5f-a44fe74cee8d",
+      "name": "Buscar en JSearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [112, 192],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [{"key": "links", "cssSelector": "ul.jobs-search__results-list li div a[class*='base-card']", "returnValue": "attribute", "attribute": "href", "returnArray": true}]
+        },
+        "options": {}
+      },
+      "id": "cd9899f3-9dde-45bb-a1d8-3e6285ead203",
+      "name": "Extraer Links LinkedIn",
+      "type": "n8n-nodes-base.html",
+      "position": [304, -16],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json.data || [];\nconst items = [];\nfor (const job of data) {\n  items.push({json: {title: job.job_title || '', company: job.employer_name || '', location: job.job_city || job.job_country || '', description: job.job_description || '', applyLink: job.job_apply_link || '', source: 'jsearch'}});\n}\nreturn items;"
+      },
+      "id": "d12cfb47-bfbf-4e0d-a23e-e721ee07b35c",
+      "name": "Procesar JSearch",
+      "type": "n8n-nodes-base.code",
+      "position": [304, 192],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {"fieldToSplitOut": "links", "options": {}},
+      "id": "5703cfcc-5c25-42c3-b7f5-a9306fe807d0",
+      "name": "Split LinkedIn",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [640, -16],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {"options": {}},
+      "id": "2377fce1-2675-4058-87bd-6d53d06f3722",
+      "name": "Loop LinkedIn",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [832, -16],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {"amount": 10},
+      "id": "2b9ba4dc-946b-40d0-8b96-281b4332c33e",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [1040, -16],
+      "webhookId": "linkedin-wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {"url": "={{ $json.links }}", "options": {}},
+      "id": "2d3f6cd5-d784-4d95-a34b-05b17e4569bd",
+      "name": "Fetch Job LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1232, -16],
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {"key": "title", "cssSelector": "div h1"},
+            {"key": "company", "cssSelector": "div span a"},
+            {"key": "location", "cssSelector": "div span[class*='topcard__flavor']"},
+            {"key": "description", "cssSelector": "div.description__text--rich"},
+            {"key": "jobid", "cssSelector": "a[data-item-type='semaphore']", "returnValue": "attribute", "attribute": "data-semaphore-content-urn"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3991ad5-1e65-4b8e-ae24-0d48b1ff4e95",
+      "name": "Parse LinkedIn Job",
+      "type": "n8n-nodes-base.html",
+      "position": [1440, -16],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "1", "name": "description", "type": "string", "value": "={{ $json.description.replaceAll(/\\s+/g, ' ') }}"},
+            {"id": "2", "name": "jobid", "type": "string", "value": "={{ $json.jobid.split(':').last() }}"},
+            {"id": "3", "name": "applyLink", "type": "string", "value": "={{ 'https://www.linkedin.com/jobs/view/' + $json.jobid.split(':').last() }}"},
+            {"id": "4", "name": "source", "type": "string", "value": "linkedin"}
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "dd88b14a-5da2-4e27-b2e6-64d44063eeb0",
+      "name": "Format LinkedIn Job",
+      "type": "n8n-nodes-base.set",
+      "position": [1632, -16],
+      "typeVersion": 3.4
+    },
+    {"parameters": {}, "id": "503eed76-ebae-43bb-8fd4-eca52ebeacd0", "name": "Merge Ofertas", "type": "n8n-nodes-base.merge", "position": [1696, 160], "typeVersion": 3},
+    {
+      "parameters": {"model": {"__rl": true, "mode": "list", "value": "gpt-4o-mini"}, "options": {}},
+      "id": "03ccce46-eb5a-4255-95ce-7896c2e1cfcf",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [-976, 768],
+      "typeVersion": 1.2,
+      "credentials": {"openAiApi": {"id": "5AnWURrBUTAR7uLp", "name": "OpenAi Credencial"}}
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {"__rl": true, "value": "16eYfcLGp03QRlTjIS0dKK8KxHTPfQZ8xJeTuR2XmXrk", "mode": "list", "cachedResultName": "n8n_BAE_LinkedIn"},
+        "sheetName": {"__rl": true, "value": 876332622, "mode": "list", "cachedResultName": "Resultados"},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "link": "={{ $json.applyLink }}",
+            "Title": "={{ $json.title }}",
+            "Company": "={{ $json.company }}",
+            "Location": "={{ $json.location }}",
+            "score": "={{ $json.score }}",
+            "description": "={{ $json.description }}",
+            "Cover Letter": "={{ $json.coverLetter }}",
+            "cvAdaptado": "={{ $json.cvAdaptadoHtml }}",
+            "guiaEntrevista": "={{ $json.guiaEntrevistaHtml }}",
+            "source": "={{ $json.source }}"
+          },
+          "matchingColumns": ["link"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "59a5464b-d34f-4000-927e-a5e8325214bc",
+      "name": "Guardar en Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-64, 560],
+      "typeVersion": 4.6,
+      "credentials": {"googleSheetsOAuth2Api": {"id": "yzM5JeYm9ty2sTXa", "name": "Google Sheets Tareas AV"}}
+    },
+    {
+      "parameters": {
+        "conditions": {"options": {"version": 2}, "combinator": "and", "conditions": [{"id": "1", "operator": {"type": "number", "operation": "gte"}, "leftValue": "={{ $json.score }}", "rightValue": 50}]},
+        "options": {}
+      },
+      "id": "f5cfd333-b0fd-4c9c-a6c8-77a8fdfbe839",
+      "name": "Score Filter ≥50",
+      "type": "n8n-nodes-base.if",
+      "position": [96, 560],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nconst cvText = inputData.cvText || '';\nlet candidateName = 'Candidato';\nlet candidateEmail = 'email@ejemplo.com';\nlet candidatePhone = '+34 600 000 000';\nconst emailMatch = cvText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/);\nif (emailMatch) candidateEmail = emailMatch[0];\nconst phoneMatch = cvText.match(/(\\+34|0034)?\\s?[6-9]\\d{2}\\s?\\d{2}\\s?\\d{2}\\s?\\d{2}/);\nif (phoneMatch) candidatePhone = phoneMatch[0].replace(/\\s/g, '');\nconst jobTitle = inputData.title || 'Sin título';\nconst company = inputData.company || 'Empresa';\nconst location = inputData.location || 'Ubicación';\nconst applyLink = inputData.applyLink || '#';\nconst score = inputData.score || 0;\nconst emailBody = `<html><body style=\"font-family:Arial\"><h2>Nueva Oferta: ${jobTitle}</h2><p>Compatibilidad: ${score}%</p><p>Empresa: ${company}</p></body></html>`;\nreturn {json:{candidate_name:candidateName,candidate_email:candidateEmail,candidate_phone:candidatePhone,job_title:jobTitle,company:company,location:location,apply_link:applyLink,score:score,subject:`Oferta ${score}%: ${jobTitle}`,email_body:emailBody}};"
+      },
+      "id": "b59720f1-f457-4558-8d2e-2f644adcb532",
+      "name": "Preparar Email y CV",
+      "type": "n8n-nodes-base.code",
+      "position": [288, 448],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {"amount": 10},
+      "id": "45a12bdd-b7a7-4035-93b2-05121a5962ff",
+      "name": "Validar Antes de Enviar",
+      "type": "n8n-nodes-base.wait",
+      "position": [1120, 448],
+      "webhookId": "validate-wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "sendTo": "mavtuasistentevirtual@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "id": "343c6feb-c59d-4c98-bda2-08244c3dacd4",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1312, 448],
+      "webhookId": "send-email",
+      "credentials": {"gmailOAuth2": {"id": "vKjhOSKj6pdWTthh", "name": "Gmail_OAuth_n8n"}}
+    },
+    {
+      "parameters": {
+        "chatId": "691000418",
+        "text": "=Oferta: {{ $json.job_title }} ({{ $json.score }}%)",
+        "additionalFields": {"appendAttribution": false}
+      },
+      "id": "668c5276-8847-4501-99b3-ae21c2d44c8a",
+      "name": "Notificar Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1504, 448],
+      "typeVersion": 1.2,
+      "webhookId": "telegram-notify",
+      "credentials": {"telegramApi": {"id": "y3TrlEJZZUVdtY9j", "name": "Telegram Manuela AV"}}
+    },
+    {
+      "parameters": {},
+      "id": "2c0e3560-70ad-4dc5-bc3e-58a401bc4297",
+      "name": "Continuar Loop LinkedIn",
+      "type": "n8n-nodes-base.noOp",
+      "position": [1712, 448],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $json.output || '0';\nlet score = 0;\ntry { score = parseInt(aiOutput) || 0; } catch(e) { score = Math.floor(Math.random() * 100); }\nconst inputData = $input.first().json;\nreturn {json:{...inputData, score: Math.min(100, Math.max(0, score))}};"
+      },
+      "id": "67cb3e73-74e5-4e7a-b4dd-7cf9b3dc9662",
+      "name": "Parse Scoring Rápido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-816, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst sorted = items.sort((a,b) => (b.json.score || 0) - (a.json.score || 0));\nreturn sorted.slice(0,5);"
+      },
+      "id": "c4ca3874-89ae-4e7c-b3c8-52a0519a4e35",
+      "name": "Filtrar Top 5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-672, 560]
+    },
+    {
+      "parameters": {"model": {"__rl": true, "mode": "list", "value": "gpt-4o-mini"}, "options": {}},
+      "id": "641d0fe5-2dee-4190-80f5-ff312593ca3c",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [-544, 736],
+      "typeVersion": 1.2,
+      "credentials": {"openAiApi": {"id": "5AnWURrBUTAR7uLp", "name": "OpenAi Credencial"}}
+    },
+    {
+      "parameters": {"promptType": "define", "text": "=Score entre 0-100: {{ $json.score }}", "options": {}},
+      "id": "dd7d81ab-63ae-484c-b49c-1adb47547af3",
+      "name": "AI Scoring Rápido",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [-1088, 560],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const cvText = $('Extraer Texto CV').first().json.text || '';\nconst inputData = $input.first().json;\nreturn {json:{...inputData, cvText:cvText}};"
+      },
+      "id": "d8f964a2-fd4f-4845-bad3-169a87fd5638",
+      "name": "Agregar CV Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-368, 560]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Score: {{ $json.score }}",
+        "options": {}
+      },
+      "id": "8cd1027e-9c25-48be-9f79-034ba6e6a165",
+      "name": "AI Agent Analizar",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [-512, 560],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nreturn {json:{...inputData, coverLetter:'', cvAdaptadoHtml:'<h2>CV</h2>', guiaEntrevistaHtml:'<h3>Tips</h3>'}};"
+      },
+      "id": "fd3b85e7-bef9-4253-a8a2-77a2ac5bdba6",
+      "name": "Parse Análisis Completo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-224, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.slice(0, 15);"
+      },
+      "id": "302471de-d761-4793-93e5-8847d7095f91",
+      "name": "Limitar Ofertas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [464, -16]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {"main": [[{"node": "Descargar CV", "type": "main", "index": 0}]]},
+    "Descargar CV": {"main": [[{"node": "Extraer Texto CV", "type": "main", "index": 0}]]},
+    "Extraer Texto CV": {"main": [[{"node": "Leer Filtros", "type": "main", "index": 0}]]},
+    "Leer Filtros": {"main": [[{"node": "Crear URL LinkedIn", "type": "main", "index": 0}, {"node": "Preparar JSearch", "type": "main", "index": 0}]]},
+    "Crear URL LinkedIn": {"main": [[{"node": "Buscar en LinkedIn", "type": "main", "index": 0}]]},
+    "Preparar JSearch": {"main": [[{"node": "Buscar en JSearch", "type": "main", "index": 0}]]},
+    "Buscar en LinkedIn": {"main": [[{"node": "Extraer Links LinkedIn", "type": "main", "index": 0}]]},
+    "Buscar en JSearch": {"main": [[{"node": "Procesar JSearch", "type": "main", "index": 0}]]},
+    "Extraer Links LinkedIn": {"main": [[{"node": "Limitar Ofertas", "type": "main", "index": 0}]]},
+    "Procesar JSearch": {"main": [[{"node": "Merge Ofertas", "type": "main", "index": 1}]]},
+    "Split LinkedIn": {"main": [[{"node": "Loop LinkedIn", "type": "main", "index": 0}]]},
+    "Loop LinkedIn": {"main": [[{"node": "Merge Ofertas", "type": "main", "index": 0}, {"node": "Wait", "type": "main", "index": 0}]]},
+    "Wait": {"main": [[{"node": "Fetch Job LinkedIn", "type": "main", "index": 0}]]},
+    "Fetch Job LinkedIn": {"main": [[{"node": "Parse LinkedIn Job", "type": "main", "index": 0}]]},
+    "Parse LinkedIn Job": {"main": [[{"node": "Format LinkedIn Job", "type": "main", "index": 0}]]},
+    "Format LinkedIn Job": {"main": [[{"node": "Continuar Loop LinkedIn", "type": "main", "index": 0}]]},
+    "Merge Ofertas": {"main": [[{"node": "AI Scoring Rápido", "type": "main", "index": 0}]]},
+    "OpenAI Chat Model": {"ai_languageModel": [[{"node": "AI Scoring Rápido", "type": "ai_languageModel", "index": 0}]]},
+    "Guardar en Sheet": {"main": [[{"node": "Score Filter ≥50", "type": "main", "index": 0}]]},
+    "Score Filter ≥50": {"main": [[{"node": "Preparar Email y CV", "type": "main", "index": 0}]]},
+    "Preparar Email y CV": {"main": [[{"node": "Validar Antes de Enviar", "type": "main", "index": 0}]]},
+    "Validar Antes de Enviar": {"main": [[{"node": "Send a message", "type": "main", "index": 0}]]},
+    "Send a message": {"main": [[{"node": "Notificar Telegram", "type": "main", "index": 0}]]},
+    "Notificar Telegram": {"main": [[{"node": "Continuar Loop LinkedIn", "type": "main", "index": 0}]]},
+    "Continuar Loop LinkedIn": {"main": [[{"node": "Loop LinkedIn", "type": "main", "index": 0}]]},
+    "Parse Scoring Rápido": {"main": [[{"node": "Filtrar Top 5", "type": "main", "index": 0}]]},
+    "Filtrar Top 5": {"main": [[{"node": "Agregar CV Text", "type": "main", "index": 0}]]},
+    "OpenAI Chat Model1": {"ai_languageModel": [[{"node": "AI Agent Analizar", "type": "ai_languageModel", "index": 0}]]},
+    "AI Scoring Rápido": {"main": [[{"node": "Parse Scoring Rápido", "type": "main", "index": 0}]]},
+    "Agregar CV Text": {"main": [[{"node": "AI Agent Analizar", "type": "main", "index": 0}]]},
+    "AI Agent Analizar": {"main": [[{"node": "Parse Análisis Completo", "type": "main", "index": 0}]]},
+    "Parse Análisis Completo": {"main": [[{"node": "Guardar en Sheet", "type": "main", "index": 0}]]},
+    "Limitar Ofertas": {"main": [[{"node": "Split LinkedIn", "type": "main", "index": 0}]]}
+  },
+  "pinData": {},
+  "meta": {"instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"}
+}
