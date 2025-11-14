@@ -1,0 +1,330 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 428860850,
+          "mode": "list",
+          "cachedResultName": "FINANZAS_INGRESOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit#gid=428860850"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "proyecto_id",
+              "lookupValue": "={{ $json.proyecto_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1072,
+        128
+      ],
+      "id": "4b63835d-ef0e-453f-87ea-88d4fe576028",
+      "name": "💰 Consultar Finanzas",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "16qhidM_JeuaKpLDiuRddXQ3umtiAGX_sQ_Jz9gSCN64",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 828327227,
+          "mode": "list"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "proyecto_id",
+              "lookupValue": "={{ $json.proyecto_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1264,
+        112
+      ],
+      "id": "52069bf6-18bb-4d3c-9eea-b6beb788513c",
+      "name": "📋 Consultar Tareas",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2121789613,
+          "mode": "list",
+          "cachedResultName": "CLIENTES_SERVICIOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit#gid=2121789613"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "nombre_telegram",
+              "lookupValue": "={{ $json.nombre_telegram }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -928,
+        -96
+      ],
+      "id": "57af4716-4175-43a5-81fa-9bf2df336318",
+      "name": "📊 Buscar en PROYECTOS_CLIENTES",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2109576091,
+          "mode": "list",
+          "cachedResultName": "PROYECTOS_INTERNOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8/edit#gid=2109576091"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "proyecto_id": "={{ $json.proyecto_id }}",
+            "nombre": "={{ $json.nombre }}",
+            "tipo": "={{ $json.tipo }}",
+            "estado": "={{ $json.estado }}",
+            "fecha_inicio": "={{ $json.fecha_inicio }}",
+            "fecha_limite": "={{ $json.fecha_limite }}",
+            "prioridad": "={{ $json.prioridad }}",
+            "progreso": "={{ $json.progreso }}",
+            "tiempo_estimado": "={{ $json.tiempo_estimado }}",
+            "tiempo_real": "={{ $json.tiempo_real }}",
+            "notas": "={{ $json.notas }}",
+            "responsable": "={{ $json.responsable }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "proyecto_id",
+              "displayName": "proyecto_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_inicio",
+              "displayName": "fecha_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_limite",
+              "displayName": "fecha_limite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prioridad",
+              "displayName": "prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "progreso",
+              "displayName": "progreso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tiempo_estimado",
+              "displayName": "tiempo_estimado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tiempo_real",
+              "displayName": "tiempo_real",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "notas",
+              "displayName": "notas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "responsable",
+              "displayName": "responsable",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -544,
+        -224
+      ],
+      "id": "8fd0d01e-4b5d-4078-9bee-7d5ba2d89b1f",
+      "name": "➕ Registrar Nuevo Proyecto",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "💰 Consultar Finanzas": {
+      "main": [
+        []
+      ]
+    },
+    "📋 Consultar Tareas": {
+      "main": [
+        [
+          {
+            "node": "💰 Consultar Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Buscar en PROYECTOS_CLIENTES": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"
+  }
+}
