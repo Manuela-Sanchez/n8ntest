@@ -1,0 +1,72 @@
+{
+  "name": "🔍 Obtener Mi Username de Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger-test",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "test-username-telegram",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=🎯 TU INFORMACIÓN:\n\n👤 Nombre: {{ $json.message.from.first_name }}\n📱 Username: @{{ $json.message.chat.username }}\n🆔 Chat ID: {{ $json.message.chat.id }}\n\n✅ Copia tu username (sin el @) para usarlo en el filtro del workflow.",
+        "additionalFields": {}
+      },
+      "id": "send-username-info",
+      "name": "Enviar Info",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        460,
+        300
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Enviar Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"
+  },
+  "tags": []
+}
