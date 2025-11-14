@@ -1,0 +1,856 @@
+{
+  "name": "🤖 María - Asistente Virtual IA AVANZA (Completo)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1600,
+        400
+      ],
+      "id": "8fea28b8-22ec-4950-b383-93cafeb1f7b4",
+      "name": "📱 Trigger Telegram",
+      "webhookId": "maria-av-trigger-completo",
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const mensaje = $input.first().json;\n  if (!mensaje || typeof mensaje !== 'object') throw new Error('Mensaje de Telegram inválido');\n  if (!mensaje.message) throw new Error('Campo message no encontrado');\n  \n  const chat_id = mensaje.message?.chat?.id;\n  if (!chat_id) throw new Error('Chat ID no encontrado');\n  \n  const nombre = ((mensaje.message?.from?.first_name || '') + ' ' + (mensaje.message?.from?.last_name || '')).trim();\n  if (!nombre || nombre.length < 2) throw new Error('Nombre vacío');\n  \n  const mensaje_texto = mensaje.message?.text || '';\n  if (!mensaje_texto) throw new Error('Mensaje vacío');\n  if (mensaje_texto.length > 5000) throw new Error('Mensaje muy largo');\n  \n  const username = mensaje.message?.from?.username || '';\n  \n  return { \n    json: { \n      chat_id: chat_id.toString(), \n      nombre_telegram: nombre, \n      username, \n      mensaje_texto, \n      timestamp: new Date().toISOString(), \n      error: false \n    } \n  };\n} catch (error) {\n  return { \n    json: { \n      error: true, \n      error_tipo: 'IDENTIFICACION_FALLIDA', \n      error_mensaje: error.message, \n      chat_id: $input.first().json?.message?.chat?.id?.toString() || 'DESCONOCIDO' \n    } \n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        400
+      ],
+      "id": "5b17886c-5395-4945-8b04-1e5ab3e14273",
+      "name": "🔍 Identificar Cliente"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=2121789613",
+          "mode": "list",
+          "cachedResultName": "PROYECTOS_CLIENTES"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chat_id",
+              "lookupValue": "={{ $json.chat_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1200,
+        400
+      ],
+      "id": "ccf1388b-20bb-488c-8de6-a8a0019982dc",
+      "name": "📊 Buscar Proyecto Cliente",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-nuevo",
+              "leftValue": "={{ $json.proyecto_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1000,
+        400
+      ],
+      "id": "642d6cd9-8036-4925-a5fc-bc3f2cc42265",
+      "name": "❓ ¿Cliente Nuevo?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GENERAR ID DE PROYECTO\nconst timestamp = Date.now().toString().slice(-8);\nconst proyectoId = `PROJ-${timestamp}`;\nconst datos = $input.first().json;\n\nreturn { \n  json: {\n    proyecto_id: proyectoId,\n    nombre: `Proyecto ${datos.nombre_telegram}`,\n    tipo: 'Consultoría General',\n    estado: 'Nuevo',\n    fecha_inicio: new Date().toISOString().split('T')[0],\n    fecha_limite: '',\n    prioridad: '🟡 Media',\n    progreso: '0%',\n    tiempo_estimado: '0h',\n    tiempo_real: '0h',\n    notas: datos.mensaje_texto || '',\n    responsable: 'Manuela',\n    chat_id: datos.chat_id,\n    nombre_telegram: datos.nombre_telegram\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        300
+      ],
+      "id": "prep-nuevo-proyecto",
+      "name": "Preparar Nuevo Proyecto"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=2121789613",
+          "mode": "list",
+          "cachedResultName": "PROYECTOS_CLIENTES"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "proyecto_id": "={{ $json.proyecto_id }}",
+            "nombre": "={{ $json.nombre }}",
+            "tipo": "={{ $json.tipo }}",
+            "estado": "={{ $json.estado }}",
+            "fecha_inicio": "={{ $json.fecha_inicio }}",
+            "prioridad": "={{ $json.prioridad }}",
+            "progreso": "={{ $json.progreso }}",
+            "chat_id": "={{ $json.chat_id }}",
+            "responsable": "={{ $json.responsable }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -600,
+        300
+      ],
+      "id": "7195738d-0ab1-43c4-8f13-88bd67bed7d1",
+      "name": "➕ Registrar Proyecto",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// DESGLOSADOR DE PROYECTOS CON PRIORIZACIÓN\nconst proyecto = $input.first().json;\nconst servicio = proyecto.tipo || 'Consultoría General';\nconst descripcion = proyecto.mensaje_texto || proyecto.notas || '';\n\n// PLANTILLAS DE TAREAS\nconst plantillas = {\n  'Consultoría CRM': [\n    { descripcion: '🔍 Análisis necesidades y procesos', tiempo: '2h', prioridad: '🔴 Alta', categoria: 'Análisis' },\n    { descripcion: '🛠️ Configuración inicial CRM', tiempo: '4h', prioridad: '🔴 Alta', categoria: 'Implementación' },\n    { descripcion: '📊 Migración de datos', tiempo: '3h', prioridad: '🟡 Media', categoria: 'Datos' },\n    { descripcion: '👥 Capacitación del equipo', tiempo: '2h', prioridad: '🟢 Baja', categoria: 'Formación' },\n    { descripcion: '✅ Revisión y ajustes finales', tiempo: '1h', prioridad: '🟡 Media', categoria: 'Calidad' }\n  ],\n  'Consultoría General': [\n    { descripcion: '🔍 Reunión inicial y análisis', tiempo: '1h', prioridad: '🔴 Alta', categoria: 'Análisis' },\n    { descripcion: '📋 Planificación del proyecto', tiempo: '2h', prioridad: '🔴 Alta', categoria: 'Planificación' },\n    { descripcion: '🛠️ Implementación de solución', tiempo: '4h', prioridad: '🟡 Media', categoria: 'Implementación' },\n    { descripcion: '🧪 Pruebas y ajustes', tiempo: '2h', prioridad: '🟡 Media', categoria: 'Testing' },\n    { descripcion: '📞 Seguimiento post-implementación', tiempo: '1h', prioridad: '🟢 Baja', categoria: 'Soporte' }\n  ]\n};\n\n// DETECTAR TIPO\nlet tipoDetectado = 'Consultoría General';\nconst mensajeLower = descripcion.toLowerCase();\nif (mensajeLower.includes('crm') || mensajeLower.includes('cliente')) {\n  tipoDetectado = 'Consultoría CRM';\n}\n\n// GENERAR TAREAS CON SCORING\nconst ahora = new Date();\nconst tareasBase = plantillas[tipoDetectado] || plantillas['Consultoría General'];\n\nconst tareasConScore = tareasBase.map((t, i) => {\n  let urgencia = 1, importancia = 1, impacto = 1;\n  \n  if (/configur|implementar/i.test(t.descripcion)) impacto += 2;\n  if (/análisis|planificación/i.test(t.descripcion)) importancia += 2;\n  \n  if (t.prioridad === '🔴 Alta') { urgencia += 3; importancia += 2; }\n  if (t.prioridad === '🟡 Media') { urgencia += 2; }\n  if (t.prioridad === '🟢 Baja') { importancia += 1; }\n  \n  const puntuacion = urgencia*0.45 + importancia*0.35 + impacto*0.2;\n  \n  return { \n    ...t, \n    urgencia, \n    importancia, \n    impacto, \n    puntuacion: Math.round(puntuacion*10)/10,\n    tarea_id: `TASK-${Date.now().toString().slice(-6)}-${i+1}`\n  };\n});\n\n// ORDENAR POR PUNTUACIÓN\nconst tareasPriorizadas = tareasConScore.sort((a,b) => b.puntuacion - a.puntuacion);\n\n// CALCULAR TIEMPO TOTAL\nconst tiempoTotal = tareasPriorizadas.reduce((total, t) => {\n  const horas = parseInt(t.tiempo) || 0;\n  return total + horas;\n}, 0);\n\n// CALCULAR FECHA ENTREGA\nconst diasEntrega = Math.max(3, Math.ceil(tiempoTotal / 8));\nconst fechaEntrega = new Date();\nfechaEntrega.setDate(fechaEntrega.getDate() + diasEntrega);\n\nreturn {\n  json: {\n    ...proyecto,\n    servicio_detectado: tipoDetectado,\n    tareas_generadas: tareasPriorizadas,\n    tareas_totales: tareasPriorizadas.length,\n    tiempo_total_estimado: `${tiempoTotal}h`,\n    fecha_entrega_estimada: fechaEntrega.toISOString().split('T')[0],\n    dias_estimados: diasEntrega\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        400
+      ],
+      "id": "a0245283-217c-4857-b2a0-4311ba00bd24",
+      "name": "🧩 Desglosador de Proyectos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALCULADOR DE TIEMPO Y EFICIENCIA\nconst proyecto = $input.first().json;\nconst tareasGeneradas = proyecto.tareas_generadas || [];\n\n// MÉTRICAS\nconst tareasTotales = tareasGeneradas.length;\nconst tareasCompletadas = 0; // Inicialmente ninguna completada\nconst tareasPendientes = tareasTotales;\n\n// CALCULAR TIEMPOS\nconst tiempoEstimadoTotal = tareasGeneradas.reduce((total, t) => {\n  const match = t.tiempo?.match(/(\\d+)h/) || [0, 0];\n  return total + parseInt(match[1]);\n}, 0);\n\nconst tiempoRealTotal = 0; // Inicialmente 0\nconst tiempoPendiente = tiempoEstimadoTotal;\n\n// EFICIENCIA Y ALERTAS\nconst eficiencia = 100;\nlet alertas = [];\n\nif (tiempoPendiente > 16) {\n  alertas.push('📅 Carga alta - considerar replanificación');\n}\n\n// CALCULAR CARGA DE TRABAJO\nconst horasPorDia = 6;\nconst diasRestantes = Math.ceil(tiempoPendiente / horasPorDia);\n\nlet cargaTrabajo = '🟢 Baja';\nif (tiempoPendiente > 20) cargaTrabajo = '🔴 Alta';\nelse if (tiempoPendiente > 10) cargaTrabajo = '🟡 Media';\n\nreturn {\n  json: {\n    ...proyecto,\n    progreso_global: '0%',\n    tareas_completadas: tareasCompletadas,\n    tareas_pendientes: tareasPendientes,\n    tiempo_estimado_total: `${tiempoEstimadoTotal}h`,\n    tiempo_real_total: `${tiempoRealTotal}h`,\n    tiempo_pendiente: `${tiempoPendiente}h`,\n    eficiencia_global: `${eficiencia}%`,\n    alertas_automaticas: alertas,\n    dias_restantes: diasRestantes,\n    carga_trabajo: cargaTrabajo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        400
+      ],
+      "id": "a874ad20-20c0-4647-99d2-8bab2700b465",
+      "name": "⏱️ Calculador de Tiempo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// OPTIMIZADOR DE CARGA\nconst proyecto = $input.first().json;\nconst tareasGeneradas = proyecto.tareas_generadas || [];\nconst tareasPendientes = tareasGeneradas;\n\n// PARÁMETROS\nconst horasPorDia = 6;\nconst diasLaborables = 5;\nconst horasSemanales = horasPorDia * diasLaborables;\n\n// CALCULAR HORAS PENDIENTES\nconst horasPendientes = tareasPendientes.reduce((total, t) => {\n  const horas = parseInt(t.tiempo) || 0;\n  return total + horas;\n}, 0);\n\n// DISTRIBUCIÓN\nconst semanasNecesarias = Math.ceil(horasPendientes / horasSemanales);\nconst cargaDiaria = horasPendientes / (semanasNecesarias * diasLaborables);\n\n// PLAN SEMANAL\nconst planSemanal = [];\nlet horasAsignadas = 0;\nlet diaActual = 1;\n\ntareasPendientes.forEach(tarea => {\n  const horasTarea = parseInt(tarea.tiempo) || 0;\n  \n  if (horasAsignadas + horasTarea <= horasSemanales) {\n    planSemanal.push({\n      tarea: tarea.descripcion,\n      prioridad: tarea.prioridad,\n      tiempo: tarea.tiempo,\n      categoria: tarea.categoria,\n      puntuacion: tarea.puntuacion,\n      semana: 1,\n      dia: diaActual\n    });\n    \n    horasAsignadas += horasTarea;\n    if (horasAsignadas >= horasPorDia) {\n      diaActual++;\n      horasAsignadas = 0;\n    }\n  }\n});\n\n// RECOMENDACIONES\nlet optimizaciones = [];\n\nif (semanasNecesarias > 2) {\n  optimizaciones.push('📅 Proyecto extenso - considerar dividir en fases');\n}\n\nif (cargaDiaria > 8) {\n  optimizaciones.push('⚡ Carga diaria alta - evaluar delegación');\n}\n\nif (tareasPendientes[0]?.puntuacion > 4) {\n  optimizaciones.push('🎯 Tareas críticas identificadas - enfocar recursos');\n}\n\nreturn {\n  json: {\n    ...proyecto,\n    carga_trabajo_horas: horasPendientes,\n    semanas_estimadas: semanasNecesarias,\n    carga_diaria_promedio: `${cargaDiaria.toFixed(1)}h/día`,\n    plan_semanal_optimizado: planSemanal,\n    optimizaciones_recomendadas: optimizaciones,\n    puede_autogestionarse: horasPendientes <= 40 && semanasNecesarias <= 2,\n    necesita_supervision: horasPendientes > 40 || semanasNecesarias > 2\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        400
+      ],
+      "id": "051d66e6-cb50-4bfd-80a2-19b385c2d44f",
+      "name": "🎯 Optimizador de Carga"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "aeee6ff9-1063-43db-903b-75a6dde5e5ad",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        200,
+        200
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "5AnWURrBUTAR7uLp",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('📱 Trigger Telegram').item.json.message.chat.username }}"
+      },
+      "id": "abbea7b3-e3b0-4d86-a3bd-e92d134138d9",
+      "name": "Memory Buffer",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        200,
+        320
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje_texto }}",
+        "options": {
+          "systemMessage": "=Eres María, la Asistente Virtual de IA AVANZA.\n\n## Identidad\n- Asistente profesional de productividad para Manuela\n- Empresa: IA AVANZA (contacto@iaavanza.com)\n- Especialidad: Automatización con n8n y orientación laboral\n- Zona horaria: Europe/Madrid\n- Moneda: Euro (€)\n- Fecha/hora actual: {{ $now }}\n\n## CONTEXTO DEL PROYECTO ACTUAL\n{{ $json.proyecto_id ? '✅ Proyecto: ' + $json.proyecto_id : '⚠️ Sin proyecto asignado' }}\n{{ $json.tareas_totales ? '📋 Tareas totales: ' + $json.tareas_totales : '' }}\n{{ $json.progreso_global ? '📊 Progreso: ' + $json.progreso_global : '' }}\n{{ $json.tiempo_pendiente ? '⏱️ Tiempo pendiente: ' + $json.tiempo_pendiente : '' }}\n{{ $json.carga_trabajo ? '🎯 Carga de trabajo: ' + $json.carga_trabajo : '' }}\n\n## Capacidades\n\n### Email (Gmail)\n- Enviar, responder, leer correos\n- Crear borradores\n- Firma: \"\\n\\nSaludos,\\nMaría\\nAsistente Virtual | IA AVANZA\\ncontacto@iaavanza.com\"\n\n### Calendario\n- Verificar disponibilidad\n- Crear, actualizar, eliminar eventos\n- Gestionar reuniones\n\n### Tareas (Google Tasks)\n- Crear, completar, eliminar tareas\n- Establecer fechas límite\n- Lista por defecto: 'IA Avanza'\n\n### Finanzas (Google Sheets)\n- Registrar gastos/ingresos en €\n- Generar reportes\n- Categorizar transacciones\n\n### Contactos\n- Buscar información de contactos\n\n## COMANDOS ESPECIALES\n\n### Gestión de Tareas\n- `/encargo <descripción>` - Crear desglose automático de tareas\n- `/completar TASK-123 85%` - Actualizar progreso de tarea\n- `/estado TASK-123` - Consultar estado de tarea\n- `/panel` - Ver panel de control general\n\n### Finanzas\n- `/gasto 150 Hosting #infraestructura` - Registrar gasto\n- `/ingreso 2000 Consultoría` - Registrar ingreso\n\n### Agenda\n- `/agenda semana` - Ver agenda de la semana\n- `/agenda hoy` - Ver agenda de hoy\n- `/agenda mañana` - Ver agenda de mañana\n\n## Pautas\n- Tono profesional pero cercano\n- Proactiva con sugerencias\n- Confirma acciones importantes\n- No uses placeholders\n- Valida información antes de ejecutar\n\n## Prioridades\n1. Urgente: Citas, deadlines\n2. Importante: Comunicaciones, tareas críticas\n3. Rutina: Organización diaria\n4. Mejora: Optimizaciones"
+        }
+      },
+      "id": "b2544c68-bb17-492b-a246-371b7c0bd59a",
+      "name": "María AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        200,
+        400
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// PROCESAR RESPUESTA DEL AGENTE\nconst agentResponse = $input.first().json;\nconst contexto = $('🔍 Identificar Cliente').first().json;\n\nlet respuestaFinal = '';\nlet accionDetectada = 'conversacion';\nlet datosAccion = {};\n\n// EXTRAER RESPUESTA\nif (agentResponse.output && typeof agentResponse.output === 'string') {\n  respuestaFinal = agentResponse.output;\n  \n  // DETECTAR SI HAY COMANDOS EN LA RESPUESTA\n  const textoLower = contexto.mensaje_texto.toLowerCase();\n  \n  if (textoLower.startsWith('/encargo')) {\n    accionDetectada = 'crear_desglose';\n    datosAccion = { descripcion: contexto.mensaje_texto.replace('/encargo', '').trim() };\n  } else if (textoLower.startsWith('/completar')) {\n    accionDetectada = 'completar_tarea';\n    const match = contexto.mensaje_texto.match(/(TASK-\\d+)\\s+(\\d+)%/i);\n    if (match) {\n      datosAccion = { tarea_id: match[1], progreso: parseInt(match[2]) };\n    }\n  } else if (textoLower.startsWith('/gasto')) {\n    accionDetectada = 'registrar_gasto';\n    const match = contexto.mensaje_texto.match(/\\/gasto\\s+([0-9]+(?:[.,][0-9]{1,2})?)\\s+(.+?)(?:\\s+#([a-z0-9_-]+))?$/i);\n    if (match) {\n      datosAccion = { \n        monto: parseFloat(match[1].replace(',', '.')), \n        concepto: match[2].trim(), \n        categoria: (match[3] || 'General').trim() \n      };\n    }\n  } else if (textoLower.startsWith('/agenda')) {\n    accionDetectada = 'agenda_semana';\n    let rango = 'semana';\n    if (textoLower.includes('hoy')) rango = 'hoy';\n    if (textoLower.includes('mañana')) rango = 'manana';\n    datosAccion = { rango };\n  } else if (textoLower.startsWith('/estado')) {\n    accionDetectada = 'estado_tarea';\n    const match = contexto.mensaje_texto.match(/(TASK-\\d+)/i);\n    datosAccion = { tarea_id: match ? match[1] : 'T-001' };\n  } else if (textoLower.startsWith('/panel')) {\n    accionDetectada = 'panel_control';\n  } else if (textoLower.startsWith('/ayuda') || textoLower.startsWith('/help')) {\n    accionDetectada = 'ayuda';\n  }\n}\n\nreturn {\n  json: {\n    respuesta_cliente: respuestaFinal,\n    chat_id: contexto.chat_id,\n    accion: accionDetectada,\n    datos_accion: datosAccion,\n    mensaje_original: contexto.mensaje_texto,\n    enviar_telegram: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        400
+      ],
+      "id": "7882a881-38c9-46af-aa4c-f657ae212f2d",
+      "name": "📤 Procesar Respuesta"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.respuesta_cliente }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        600,
+        400
+      ],
+      "id": "c5a3b00d-9393-47d7-a736-c74bcc700bd0",
+      "name": "🔔 Responder Telegram",
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI('To', 'Email del destinatario', 'string') }}",
+        "subject": "={{ $fromAI('Subject', 'Asunto del email', 'string') }}",
+        "message": "={{ $fromAI('Message', 'Contenido del email', 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "4f5e7fb0-b061-4d03-9b32-8743a7205f82",
+      "name": "Gmail - Enviar",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        -100,
+        600
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vKjhOSKj6pdWTthh",
+          "name": "Gmail_OAuth_n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener correos electrónicos",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "q": "={{ $fromAI('Search', 'Query de búsqueda', 'string') }}"
+        }
+      },
+      "id": "a1a942c0-4fec-4175-8a14-bd14ce4f1827",
+      "name": "Gmail - Obtener",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        0,
+        600
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vKjhOSKj6pdWTthh",
+          "name": "Gmail_OAuth_n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crear evento en calendario",
+        "calendar": {
+          "__rl": true,
+          "value": "mavtuasistentevirtual@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $fromAI('Start', 'Fecha inicio ISO', 'string') }}",
+        "end": "={{ $fromAI('End', 'Fecha fin ISO', 'string') }}",
+        "useDefaultReminders": true,
+        "additionalFields": {
+          "description": "={{ $fromAI('Description', 'Descripción', 'string') }}",
+          "summary": "={{ $fromAI('Summary', 'Título', 'string') }}"
+        }
+      },
+      "id": "54102b54-fa28-48da-92e7-73b1d5dc40e3",
+      "name": "Calendar - Crear",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        100,
+        600
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener eventos del calendario",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "mavtuasistentevirtual@gmail.com",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $fromAI('After', 'Fecha desde', 'string') }}",
+        "options": {
+          "orderBy": "startTime"
+        }
+      },
+      "id": "031813c1-845d-4ecf-8f2d-1e2c964b02de",
+      "name": "Calendar - Obtener",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        200,
+        600
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crear tarea en Google Tasks",
+        "task": "MDM1NDg1NzcxMjIyNzg5NzQ1ODI6MDow",
+        "title": "={{ $fromAI('Title', 'Título de la tarea', 'string') }}",
+        "additionalFields": {
+          "dueDate": "={{ $fromAI('Due_Date', 'Fecha vencimiento', 'string') }}",
+          "notes": "={{ $fromAI('Notes', 'Notas', 'string') }}"
+        }
+      },
+      "id": "ba76a84b-439d-4ca3-8a0d-951ca5c4a25d",
+      "name": "Tasks - Crear",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "position": [
+        300,
+        600
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "zyHm5tleV62ZgSat",
+          "name": "Google Tasks AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener tareas de Google Tasks",
+        "operation": "getAll",
+        "task": "MDM1NDg1NzcxMjIyNzg5NzQ1ODI6MDow",
+        "returnAll": true,
+        "additionalFields": {
+          "showCompleted": "={{ $fromAI('Show_Completed', 'Mostrar completadas', 'boolean') }}"
+        }
+      },
+      "id": "1588f585-ddc9-4e41-bdae-8c4ff5ead55f",
+      "name": "Tasks - Obtener",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "position": [
+        400,
+        600
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "zyHm5tleV62ZgSat",
+          "name": "Google Tasks AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Registrar gasto en finanzas",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=428860850",
+          "mode": "list",
+          "cachedResultName": "FINANZAS_INGRESOS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $fromAI('Date', 'Fecha', 'string') }}",
+            "Amount": "={{ $fromAI('Amount', 'Monto', 'string') }}",
+            "Category": "={{ $fromAI('Category', 'Categoría', 'string') }}",
+            "Description": "={{ $fromAI('Description', 'Descripción', 'string') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "0866299d-b7fa-4bfc-a0fd-a8b47395b9d4",
+      "name": "Sheets - Registrar Finanzas",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        500,
+        600
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Leer datos financieros",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=428860850",
+          "mode": "list",
+          "cachedResultName": "FINANZAS_INGRESOS"
+        },
+        "options": {}
+      },
+      "id": "ffc47f95-aaf5-4f2f-b144-961d59ff7ce0",
+      "name": "Sheets - Leer Finanzas",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        600,
+        600
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener contactos de Google",
+        "operation": "getAll",
+        "fields": [
+          "names",
+          "emailAddresses"
+        ],
+        "useQuery": "={{ $fromAI('Use_Query', 'Usar búsqueda', 'boolean') }}",
+        "query": "={{ $fromAI('Query', 'Búsqueda', 'string') }}",
+        "rawData": true,
+        "options": {}
+      },
+      "id": "3dfaee1e-d529-4c3c-a157-00c8ca2f83c1",
+      "name": "Contacts - Obtener",
+      "type": "n8n-nodes-base.googleContactsTool",
+      "position": [
+        700,
+        600
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleContactsOAuth2Api": {
+          "id": "adtRKBFulsBwyMUQ",
+          "name": "Google_Contacts_n8n_API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "3fe142c4-b00a-4d5f-b92a-163d6895c8f4",
+      "name": "Think Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "position": [
+        800,
+        600
+      ],
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "📱 Trigger Telegram": {
+      "main": [
+        [
+          {
+            "node": "🔍 Identificar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Identificar Cliente": {
+      "main": [
+        [
+          {
+            "node": "📊 Buscar Proyecto Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Buscar Proyecto Cliente": {
+      "main": [
+        [
+          {
+            "node": "❓ ¿Cliente Nuevo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❓ ¿Cliente Nuevo?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Nuevo Proyecto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🧩 Desglosador de Proyectos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Nuevo Proyecto": {
+      "main": [
+        [
+          {
+            "node": "➕ Registrar Proyecto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "➕ Registrar Proyecto": {
+      "main": [
+        [
+          {
+            "node": "🧩 Desglosador de Proyectos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Desglosador de Proyectos": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Calculador de Tiempo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏱️ Calculador de Tiempo": {
+      "main": [
+        [
+          {
+            "node": "🎯 Optimizador de Carga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Optimizador de Carga": {
+      "main": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Buffer": {
+      "ai_memory": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "María AI Agent": {
+      "main": [
+        [
+          {
+            "node": "📤 Procesar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Procesar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "🔔 Responder Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Enviar": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Obtener": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar - Crear": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar - Obtener": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tasks - Crear": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tasks - Obtener": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets - Registrar Finanzas": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets - Leer Finanzas": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contacts - Obtener": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "María AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"
+  },
+  "tags": []
+}
