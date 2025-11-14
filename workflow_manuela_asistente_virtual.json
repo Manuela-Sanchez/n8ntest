@@ -1,0 +1,841 @@
+{
+  "name": "🤖 Manuela - Asistente Virtual IA AVANZA",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -1200,
+        400
+      ],
+      "webhookId": "manuela-av-trigger",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "filter-username",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.message.chat.username }}",
+              "rightValue": "iaavanza_leads_bot"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "filter-authorized",
+      "name": "Solo Usuarios Autorizados",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        -1000,
+        400
+      ],
+      "typeVersion": 2.2,
+      "notes": "⚠️ IMPORTANTE: Cambia 'iaavanza_leads_bot' por los usernames autorizados.\nPuedes agregar más usuarios separados por OR en las condiciones."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "check-text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "check-audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-input-type",
+      "name": "Detectar Tipo de Entrada",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -800,
+        400
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -400,
+        200
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "5AnWURrBUTAR7uLp",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.username }}"
+      },
+      "id": "memory",
+      "name": "Memoria de Conversación",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -400,
+        320
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=Eres Manuela, asistente virtual profesional de IA AVANZA.\n\nTu misión es ayudar a gestionar de manera eficiente las tareas diarias, comunicaciones y organización de tus clientes.\n\n## 🎯 IDENTIDAD\n- Nombre: Manuela\n- Empresa: IA AVANZA\n- Rol: Asistente Virtual Profesional\n- Email: contacto@iaavanza.com\n- Zona horaria: Europe/Madrid\n- Fecha y hora actual: {{ $now }}\n- Moneda: Euro (€)\n\n## 💼 CAPACIDADES\n\n### 📧 Gestión de Email (Gmail)\n- Leer, enviar, responder y redactar correos\n- Organizar con etiquetas\n- Buscar y filtrar mensajes\n- Usa siempre formato HTML profesional\n- Firma: \"\\n\\nSaludos,\\nManuela\\nAsistente Virtual | IA AVANZA\\ncontacto@iaavanza.com\"\n\n### 📅 Gestión de Calendario\n- Verificar disponibilidad\n- Crear, actualizar, reprogramar y eliminar eventos\n- Gestionar reuniones y confirmaciones\n- Evitar conflictos de horario\n\n### ✅ Gestión de Tareas\n- Crear, actualizar, completar y eliminar tareas\n- Establecer fechas de vencimiento\n- Añadir notas detalladas\n- Organizar por prioridad\n\n### 💰 Seguimiento de Finanzas\n- Registrar ingresos y gastos (en €)\n- Generar reportes financieros\n- Categorizar transacciones\n- Análisis de patrones de gasto\n\n### 👥 Gestión de Contactos\n- Buscar información de contactos\n- Acceder a emails y teléfonos\n- Organizar base de datos de clientes\n\n### 📊 Gestión de Datos (Google Sheets)\n- Leer y analizar datos de hojas de cálculo\n- Agregar nuevas entradas\n- Actualizar información existente\n- Generar reportes\n\n## 🎨 ESTILO DE COMUNICACIÓN\n- Profesional pero cercano\n- Claro y conciso\n- Proactivo y eficiente\n- Siempre confirma acciones importantes\n- Sugiere mejoras y optimizaciones\n\n## 📝 FORMATO DE EMAILS\nCuando redactes emails, usa esta estructura:\n```html\n<p>Hola [Nombre],</p>\n\n<p>[Contenido del mensaje]</p>\n\n<p>Saludos,<br>\nManuela<br>\nAsistente Virtual | IA AVANZA<br>\ncontacto@iaavanza.com</p>\n```\n\n## ⚡ REGLAS OPERACIONALES\n1. Siempre valida información antes de ejecutar acciones\n2. Verifica conflictos de calendario antes de agendar\n3. Confirma destinatarios de emails\n4. Usa fechas futuras para tareas a menos que se especifique\n5. Pregunta si falta información crítica\n6. No uses placeholders ni texto genérico\n\n## 🔒 PRIVACIDAD Y SEGURIDAD\n- Maneja información confidencial con discreción\n- Confirma acciones sensibles\n- Mantén límites profesionales\n- Protege datos de clientes\n\n## 💡 EJEMPLOS DE USO\n\n**Calendario**: \"¿Tengo reuniones hoy?\"\n→ Verifico el calendario y te muestro todas las reuniones del día con horarios y participantes.\n\n**Email**: \"Envía un seguimiento al cliente X sobre el proyecto\"\n→ Te pido detalles específicos, redacto el email profesional, te lo muestro para aprobación y lo envío.\n\n**Tareas**: \"Recuérdame revisar el informe la próxima semana\"\n→ Creo una tarea con fecha de vencimiento específica y te confirmo.\n\n**Finanzas**: \"Registra un gasto de 150€ en software\"\n→ Registro el gasto con fecha, categoría y descripción, y te confirmo.\n\n## 🎯 PRIORIDADES\n1. **URGENTE**: Reuniones inminentes, deadlines\n2. **IMPORTANTE**: Comunicaciones con clientes, tareas críticas\n3. **RUTINA**: Organización, mantenimiento\n4. **OPCIONAL**: Mejoras, optimizaciones\n\n---\n\nEstoy aquí para hacer tu día más productivo y organizado. ¿En qué puedo ayudarte hoy?"
+        }
+      },
+      "id": "agent-manuela",
+      "name": "Manuela AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -400,
+        400
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-message",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.output || $json.error || 'Lo siento, ocurrió un error. Por favor, intenta de nuevo.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-reply",
+      "name": "Preparar Respuesta",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -100,
+        400
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-telegram",
+      "name": "Enviar Respuesta Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        100,
+        400
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "y3TrlEJZZUVdtY9j",
+          "name": "Telegram Manuela AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Enviar un nuevo email. Parámetros: To (email destinatario), Subject (asunto), Message (contenido en HTML).",
+        "sendTo": "={{ $fromAI('To', 'Email del destinatario', 'string') }}",
+        "subject": "={{ $fromAI('Subject', 'Asunto del email', 'string') }}",
+        "message": "={{ $fromAI('Message', 'Contenido del email en HTML', 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "tool-send-email",
+      "name": "📧 Enviar Email",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        -700,
+        600
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "googleApi": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Responder a un email existente. Parámetros: Message_ID (ID del mensaje), Message (contenido de la respuesta).",
+        "operation": "reply",
+        "messageId": "={{ $fromAI('Message_ID', 'ID del mensaje a responder', 'string') }}",
+        "emailType": "html",
+        "message": "={{ $fromAI('Message', 'Contenido de la respuesta', 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "tool-reply-email",
+      "name": "↩️ Responder Email",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        -700,
+        720
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "googleApi": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener múltiples emails según filtros. Parámetros: Search (búsqueda Gmail), Received_After (fecha inicio), Received_Before (fecha fin).",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "q": "={{ $fromAI('Search', 'Query de búsqueda Gmail', 'string') }}"
+        }
+      },
+      "id": "tool-get-emails",
+      "name": "📨 Obtener Emails",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        -700,
+        840
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "googleApi": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crear un evento en el calendario. Parámetros: Start (fecha/hora inicio), End (fecha/hora fin), Summary (título), Description (descripción).",
+        "calendar": {
+          "__rl": true,
+          "value": "mavtuasistentevirtual@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $fromAI('Start', 'Fecha y hora de inicio (ISO 8601)', 'string') }}",
+        "end": "={{ $fromAI('End', 'Fecha y hora de fin (ISO 8601)', 'string') }}",
+        "useDefaultReminders": true,
+        "additionalFields": {
+          "summary": "={{ $fromAI('Summary', 'Título del evento', 'string') }}",
+          "description": "={{ $fromAI('Description', 'Descripción del evento', 'string') }}"
+        }
+      },
+      "id": "tool-create-event",
+      "name": "📅 Crear Evento",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        -400,
+        600
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener eventos futuros del calendario. Parámetros: After (fecha desde), Before (fecha hasta).",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "mavtuasistentevirtual@gmail.com",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $fromAI('After', 'Fecha desde (ISO 8601)', 'string') }}",
+        "options": {
+          "orderBy": "startTime"
+        }
+      },
+      "id": "tool-get-events",
+      "name": "📆 Obtener Eventos",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        -400,
+        720
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Eliminar un evento del calendario. Parámetros: Event_ID (ID del evento a eliminar).",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "mavtuasistentevirtual@gmail.com",
+          "mode": "id"
+        },
+        "eventId": "={{ $fromAI('Event_ID', 'ID del evento', 'string') }}",
+        "options": {}
+      },
+      "id": "tool-delete-event",
+      "name": "🗑️ Eliminar Evento",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        -400,
+        840
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crear una nueva tarea. Parámetros: Title (título), Due_Date (fecha vencimiento), Notes (notas).",
+        "task": "MDM1NDg1NzcxMjIyNzg5NzQ1ODI6MDow",
+        "title": "={{ $fromAI('Title', 'Título de la tarea', 'string') }}",
+        "additionalFields": {
+          "dueDate": "={{ $fromAI('Due_Date', 'Fecha de vencimiento (YYYY-MM-DD)', 'string') }}",
+          "notes": "={{ $fromAI('Notes', 'Notas adicionales', 'string') }}"
+        }
+      },
+      "id": "tool-create-task",
+      "name": "✅ Crear Tarea",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "position": [
+        -100,
+        600
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "zyHm5tleV62ZgSat",
+          "name": "Google Tasks AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener todas las tareas. Parámetros: Show_Completed (true/false para mostrar completadas).",
+        "operation": "getAll",
+        "task": "MDM1NDg1NzcxMjIyNzg5NzQ1ODI6MDow",
+        "returnAll": true,
+        "additionalFields": {
+          "showCompleted": "={{ $fromAI('Show_Completed', 'Mostrar tareas completadas (true/false)', 'boolean') }}"
+        }
+      },
+      "id": "tool-get-tasks",
+      "name": "📋 Obtener Tareas",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "position": [
+        -100,
+        720
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "zyHm5tleV62ZgSat",
+          "name": "Google Tasks AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Marcar una tarea como completada. Parámetros: Task_ID (ID de la tarea).",
+        "operation": "update",
+        "task": "MDM1NDg1NzcxMjIyNzg5NzQ1ODI6MDow",
+        "taskId": "={{ $fromAI('Task_ID', 'ID de la tarea', 'string') }}",
+        "updateFields": {
+          "status": "completed"
+        }
+      },
+      "id": "tool-complete-task",
+      "name": "✔️ Completar Tarea",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "position": [
+        -100,
+        840
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "zyHm5tleV62ZgSat",
+          "name": "Google Tasks AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Leer datos de una hoja de Google Sheets (FINANZAS_INGRESOS).",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 428860850,
+          "mode": "list",
+          "cachedResultName": "FINANZAS_INGRESOS"
+        },
+        "options": {}
+      },
+      "id": "tool-read-sheet",
+      "name": "📊 Leer Finanzas",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        200,
+        600
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Registrar un nuevo ingreso/gasto. Parámetros: Date (fecha), Amount (monto en €), Category (categoría), Description (descripción).",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ooQCWaKCAS1-OfrhXT9-0QFtkHQ7CskBNh4CMboo3j8",
+          "mode": "list",
+          "cachedResultName": "SISTEMA_AV_CORPORATIVO"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 428860850,
+          "mode": "list",
+          "cachedResultName": "FINANZAS_INGRESOS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $fromAI('Date', 'Fecha (YYYY-MM-DD)', 'string') }}",
+            "Amount": "={{ $fromAI('Amount', 'Monto en €', 'string') }}",
+            "Category": "={{ $fromAI('Category', 'Categoría', 'string') }}",
+            "Description": "={{ $fromAI('Description', 'Descripción', 'string') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "tool-add-finance",
+      "name": "💰 Registrar Finanzas",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        200,
+        720
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yzM5JeYm9ty2sTXa",
+          "name": "Google Sheets Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtener contactos de Google. Parámetros: Query (texto de búsqueda opcional).",
+        "operation": "getAll",
+        "fields": [
+          "names",
+          "emailAddresses",
+          "phoneNumbers"
+        ],
+        "useQuery": "={{ $fromAI('Use_Query', '¿Usar búsqueda?', 'boolean') }}",
+        "query": "={{ $fromAI('Query', 'Texto de búsqueda', 'string') }}",
+        "rawData": true,
+        "options": {}
+      },
+      "id": "tool-get-contacts",
+      "name": "👥 Obtener Contactos",
+      "type": "n8n-nodes-base.googleContactsTool",
+      "position": [
+        200,
+        840
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleContactsOAuth2Api": {
+          "id": "adtRKBFulsBwyMUQ",
+          "name": "Google_Contacts_n8n_API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "tool-think",
+      "name": "💭 Pensar",
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "position": [
+        -400,
+        960
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Manuela - Asistente Virtual IA AVANZA\n\n**Funcionalidades:**\n✅ Gestión de Emails (Gmail)\n✅ Calendario y Eventos\n✅ Tareas y Recordatorios\n✅ Seguimiento Financiero\n✅ Gestión de Contactos\n✅ Memoria de Conversación\n\n**Configuración:**\n- Usuario autorizado: iaavanza_leads_bot\n- Bot: @iaavanza_leads_bot\n- Empresa: IA AVANZA\n- Email: contacto@iaavanza.com",
+        "height": 402,
+        "width": 394,
+        "color": 4
+      },
+      "id": "sticky-info",
+      "name": "📝 Info del Sistema",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1240,
+        180
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Solo Usuarios Autorizados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solo Usuarios Autorizados": {
+      "main": [
+        [
+          {
+            "node": "Detectar Tipo de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Tipo de Entrada": {
+      "main": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manuela AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Preparar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria de Conversación": {
+      "ai_memory": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Enviar Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "↩️ Responder Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Obtener Emails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📅 Crear Evento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📆 Obtener Eventos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗑️ Eliminar Evento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Crear Tarea": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Obtener Tareas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✔️ Completar Tarea": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Leer Finanzas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💰 Registrar Finanzas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "👥 Obtener Contactos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💭 Pensar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Manuela AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"
+  },
+  "tags": []
+}
