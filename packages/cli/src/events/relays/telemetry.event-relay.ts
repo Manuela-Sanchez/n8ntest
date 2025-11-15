@@ -60,6 +60,7 @@ export class TelemetryEventRelay extends EventRelay {
 			'license-renewal-attempted': (event) => this.licenseRenewalAttempted(event),
 			'license-community-plus-registered': (event) => this.licenseCommunityPlusRegistered(event),
 			'variable-created': () => this.variableCreated(),
+			'variables-cache-updated': () => this.variablesCacheUpdated(),
 			'external-secrets-provider-settings-saved': (event) =>
 				this.externalSecretsProviderSettingsSaved(event),
 			'public-api-invoked': (event) => this.publicApiInvoked(event),
@@ -257,6 +258,10 @@ export class TelemetryEventRelay extends EventRelay {
 
 	private variableCreated() {
 		this.telemetry.track('User created variable');
+	}
+
+	private variablesCacheUpdated() {
+		this.telemetry.track('Variables cache updated');
 	}
 
 	// #endregion

@@ -429,6 +429,7 @@ export type RelayEventMap = {
 	// #region Variable
 
 	'variable-created': {};
+	'variables-cache-updated': {};
 
 	// #endregion
 
