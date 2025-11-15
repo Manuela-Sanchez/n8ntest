@@ -1,0 +1,24 @@
+{
+  "name": "Sistema Facturación Automática Madrid - MEJORADO",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAt": "09:00",
+              "type": "month",
+              "monthDay": 1
+            }
+          ],
+          "timezone": "Europe/Madrid"
+        }
+      },
+      "name": "Trigger: Cada día 1 a las 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "id": "trigger_monthly"
+    }
+  ]
+}
