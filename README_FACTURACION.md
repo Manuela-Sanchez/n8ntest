@@ -28,6 +28,16 @@ Automatiza completamente tu proceso de facturación mensual:
 
 ---
 
+## 🚨 IMPORTANTE: Archivo a Usar
+
+**USA ESTE ARCHIVO:** `workflow_facturacion_simple.json`
+
+⚠️ **NO uses** `WORKFLOW_FACTURACION_MEJORADO.json` - ese tiene problemas de compatibilidad.
+
+📖 **Instrucciones completas de importación:** `INSTRUCCIONES_IMPORTAR.md`
+
+---
+
 ## ⚡ Inicio Rápido (5 pasos)
 
 ### 1️⃣ Crear Google Sheets
@@ -57,10 +67,11 @@ CLI001 | Empresa ABC | cliente@ejemplo.es | 1000 | 0.21 | Servicios Mensual | Tr
 ### 3️⃣ Importar Workflow a n8n
 
 1. Abre n8n
-2. Importa el archivo: `WORKFLOW_FACTURACION_MEJORADO.json`
+2. Importa el archivo: `workflow_facturacion_simple.json`
 3. Configura tus IDs:
-   - Sheet ID
-   - Folder ID de Drive
+   - Sheet ID en los nodos de Google Sheets
+
+📖 **Instrucciones detalladas:** `INSTRUCCIONES_IMPORTAR.md`
 
 ---
 

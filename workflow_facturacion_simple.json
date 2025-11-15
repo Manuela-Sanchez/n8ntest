@@ -1,0 +1,222 @@
+{
+  "name": "Facturación Automática España",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 1 * *"
+            }
+          ]
+        }
+      },
+      "name": "Cada día 1 a las 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "id": "schedule_trigger"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "REEMPLAZA_CON_TU_SHEET_ID",
+        "sheetName": "Clientes",
+        "dataMode": "autoMapInputData",
+        "options": {}
+      },
+      "name": "Leer Clientes Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENCIAL_GOOGLE_SHEETS",
+          "name": "Google Sheets account"
+        }
+      },
+      "id": "google_sheets_read"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrar solo clientes activos\nconst items = $input.all();\nconst activeClients = [];\n\nfor (const item of items) {\n  const cliente = item.json;\n  \n  // Validar que el cliente esté activo\n  if (cliente.activo === 'SI' && cliente.email_cliente && cliente.monto_base > 0) {\n    activeClients.push(item);\n  }\n}\n\nreturn activeClients;"
+      },
+      "name": "Filtrar Clientes Activos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "id": "filter_clients"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calcular totales de facturación\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  // Obtener valores\n  const montoBase = parseFloat(data.monto_base) || 0;\n  const ivaRate = parseFloat(data.iva_rate) || 0.21;\n  const diasVencimiento = parseInt(data.dias_vencimiento) || 30;\n  \n  // Calcular IVA y total\n  const ivaMonto = Math.round(montoBase * ivaRate * 100) / 100;\n  const montoTotal = Math.round((montoBase + ivaMonto) * 100) / 100;\n  \n  // Generar ID de factura\n  const now = new Date();\n  const year = now.getFullYear();\n  const month = String(now.getMonth() + 1).padStart(2, '0');\n  const random = Math.random().toString(36).substring(2, 8).toUpperCase();\n  const invoiceId = `FAC-${year}${month}-${random}`;\n  \n  // Calcular fechas\n  const fechaEmision = now.toISOString().split('T')[0];\n  const vencimiento = new Date(now.getTime() + diasVencimiento * 24 * 60 * 60 * 1000);\n  const fechaVencimiento = vencimiento.toISOString().split('T')[0];\n  \n  results.push({\n    json: {\n      // Datos originales\n      row_id_en_sheets: data.row_id_en_sheets,\n      cliente: data.cliente,\n      email_cliente: data.email_cliente,\n      concepto: data.concepto || 'Servicios mes ' + month + '/' + year,\n      forma_pago: data.forma_pago || 'Transferencia bancaria',\n      \n      // Datos calculados\n      invoice_id: invoiceId,\n      monto_base: montoBase,\n      iva_rate: ivaRate,\n      iva_monto: ivaMonto,\n      monto_total: montoTotal,\n      fecha_emision: fechaEmision,\n      fecha_vencimiento: fechaVencimiento,\n      moneda: 'EUR',\n      periodo: `${year}-${month}`,\n      \n      // Para email\n      iva_porcentaje: Math.round(ivaRate * 100)\n    }\n  });\n}\n\nreturn results;"
+      },
+      "name": "Calcular IVA y Totales",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "id": "calculate_totals"
+    },
+    {
+      "parameters": {
+        "fromEmail": "facturacion@tuempresa.com",
+        "toEmail": "={{ $json.email_cliente }}",
+        "subject": "=Factura {{ $json.invoice_id }} - {{ $json.cliente }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\nbody { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }\n.header { background: #2563eb; color: white; padding: 30px; text-align: center; }\n.content { padding: 30px; background: #f9fafb; }\n.invoice-box { background: white; padding: 20px; margin: 20px 0; border-left: 4px solid #2563eb; }\ntable { width: 100%; margin: 10px 0; }\ntd { padding: 8px 0; }\n.label { color: #6b7280; }\n.value { text-align: right; font-weight: bold; }\n.total { font-size: 24px; color: #2563eb; }\n.footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }\n</style>\n</head>\n<body>\n\n<div class=\"header\">\n<h1 style=\"margin: 0;\">Nueva Factura</h1>\n</div>\n\n<div class=\"content\">\n<p>Estimado/a <strong>{{ $json.cliente }}</strong>,</p>\n\n<p>Adjuntamos los detalles de su factura correspondiente al periodo <strong>{{ $json.periodo }}</strong>.</p>\n\n<div class=\"invoice-box\">\n<h3 style=\"margin-top: 0; color: #2563eb;\">Factura {{ $json.invoice_id }}</h3>\n\n<table>\n<tr>\n<td class=\"label\">Fecha de Emisión:</td>\n<td class=\"value\">{{ $json.fecha_emision }}</td>\n</tr>\n<tr>\n<td class=\"label\">Fecha de Vencimiento:</td>\n<td class=\"value\">{{ $json.fecha_vencimiento }}</td>\n</tr>\n<tr>\n<td class=\"label\">Forma de Pago:</td>\n<td class=\"value\">{{ $json.forma_pago }}</td>\n</tr>\n</table>\n\n<hr style=\"border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;\">\n\n<table>\n<tr>\n<td class=\"label\">Concepto:</td>\n<td class=\"value\">{{ $json.concepto }}</td>\n</tr>\n<tr>\n<td class=\"label\">Base Imponible:</td>\n<td class=\"value\">{{ $json.monto_base.toFixed(2) }} €</td>\n</tr>\n<tr>\n<td class=\"label\">IVA ({{ $json.iva_porcentaje }}%):</td>\n<td class=\"value\">{{ $json.iva_monto.toFixed(2) }} €</td>\n</tr>\n<tr style=\"border-top: 2px solid #2563eb;\">\n<td class=\"label\" style=\"padding-top: 15px; font-size: 18px;\">TOTAL:</td>\n<td class=\"value\" style=\"padding-top: 15px;\">\n<span class=\"total\">{{ $json.monto_total.toFixed(2) }} €</span>\n</td>\n</tr>\n</table>\n</div>\n\n<p>Por favor, realice el pago antes del <strong>{{ $json.fecha_vencimiento }}</strong>.</p>\n\n<p>Si tiene alguna pregunta, no dude en contactarnos.</p>\n\n<p>Gracias por su confianza.</p>\n\n<p style=\"margin-top: 30px;\">Atentamente,<br><strong>Equipo de Facturación</strong></p>\n</div>\n\n<div class=\"footer\">\n<p>Este es un correo automático. Por favor no responda directamente.</p>\n<p>Para consultas: facturacion@tuempresa.com</p>\n</div>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "name": "Enviar Email Factura",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 300],
+      "credentials": {
+        "smtp": {
+          "id": "TU_CREDENCIAL_SMTP",
+          "name": "SMTP account"
+        }
+      },
+      "id": "send_email"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "REEMPLAZA_CON_TU_SHEET_ID",
+        "sheetName": "Facturas Emitidas",
+        "columns": "invoice_id,cliente,email_cliente,monto_base,iva_monto,monto_total,fecha_emision,fecha_vencimiento,periodo",
+        "options": {}
+      },
+      "name": "Guardar en Histórico",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1250, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENCIAL_GOOGLE_SHEETS",
+          "name": "Google Sheets account"
+        }
+      },
+      "id": "save_history"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generar resumen del proceso\nconst items = $input.all();\n\nlet totalBase = 0;\nlet totalIVA = 0;\nlet totalFacturado = 0;\nconst detalles = [];\n\nfor (const item of items) {\n  totalBase += item.json.monto_base;\n  totalIVA += item.json.iva_monto;\n  totalFacturado += item.json.monto_total;\n  \n  detalles.push({\n    cliente: item.json.cliente,\n    factura: item.json.invoice_id,\n    total: item.json.monto_total.toFixed(2)\n  });\n}\n\nconst now = new Date();\nconst periodo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;\n\nreturn [{\n  json: {\n    periodo,\n    fecha: now.toISOString(),\n    total_facturas: items.length,\n    total_base: totalBase.toFixed(2),\n    total_iva: totalIVA.toFixed(2),\n    total_facturado: totalFacturado.toFixed(2),\n    detalles_html: detalles.map(d => \n      `<tr><td>${d.cliente}</td><td>${d.factura}</td><td style=\"text-align:right;font-weight:bold;\">${d.total} €</td></tr>`\n    ).join('')\n  }\n}];"
+      },
+      "name": "Generar Reporte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "id": "generate_report"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sistema@tuempresa.com",
+        "toEmail": "admin@tuempresa.com",
+        "subject": "=📊 Reporte Facturación {{ $json.periodo }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\nbody { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; }\n.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }\n.stats { display: flex; justify-content: space-around; margin: 20px 0; }\n.stat-box { background: white; padding: 20px; border: 2px solid #e5e7eb; border-radius: 8px; text-align: center; flex: 1; margin: 0 10px; }\n.stat-label { color: #6b7280; font-size: 14px; }\n.stat-value { font-size: 28px; font-weight: bold; color: #667eea; margin-top: 5px; }\ntable { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }\nth { background: #f3f4f6; padding: 12px; text-align: left; border-bottom: 2px solid #667eea; }\ntd { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }\n.footer { background: #f3f4f6; padding: 20px; text-align: center; margin-top: 30px; }\n</style>\n</head>\n<body>\n\n<div class=\"header\">\n<h1 style=\"margin: 0;\">📊 Reporte de Facturación</h1>\n<p style=\"margin: 10px 0 0 0;\">Periodo: {{ $json.periodo }}</p>\n</div>\n\n<div style=\"padding: 30px; background: #fafafa;\">\n\n<h2 style=\"color: #667eea;\">Resumen Ejecutivo</h2>\n\n<div class=\"stats\">\n<div class=\"stat-box\">\n<div class=\"stat-label\">Facturas</div>\n<div class=\"stat-value\">{{ $json.total_facturas }}</div>\n</div>\n\n<div class=\"stat-box\">\n<div class=\"stat-label\">Total Facturado</div>\n<div class=\"stat-value\" style=\"color: #10b981;\">{{ $json.total_facturado }} €</div>\n</div>\n</div>\n\n<div class=\"stats\">\n<div class=\"stat-box\">\n<div class=\"stat-label\">Base Imponible</div>\n<div class=\"stat-value\" style=\"font-size: 20px; color: #3b82f6;\">{{ $json.total_base }} €</div>\n</div>\n\n<div class=\"stat-box\">\n<div class=\"stat-label\">IVA Total</div>\n<div class=\"stat-value\" style=\"font-size: 20px; color: #f59e0b;\">{{ $json.total_iva }} €</div>\n</div>\n</div>\n\n<h2 style=\"color: #667eea; margin-top: 40px;\">Detalle por Cliente</h2>\n\n<table>\n<thead>\n<tr>\n<th>Cliente</th>\n<th>Nº Factura</th>\n<th style=\"text-align: right;\">Importe</th>\n</tr>\n</thead>\n<tbody>\n{{ $json.detalles_html }}\n</tbody>\n</table>\n\n<div style=\"background: #dbeafe; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;\">\n<h3 style=\"margin-top: 0; color: #1e40af;\">✅ Proceso Completado</h3>\n<ul style=\"margin: 10px 0;\">\n<li>✅ Facturas generadas correctamente</li>\n<li>✅ Emails enviados a clientes</li>\n<li>✅ Histórico actualizado</li>\n</ul>\n</div>\n\n</div>\n\n<div class=\"footer\">\n<p style=\"margin: 0; font-weight: bold;\">Sistema de Facturación Automática</p>\n<p style=\"margin: 5px 0 0 0; font-size: 12px; color: #6b7280;\">Powered by n8n</p>\n</div>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "name": "Enviar Reporte Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1650, 300],
+      "credentials": {
+        "smtp": {
+          "id": "TU_CREDENCIAL_SMTP",
+          "name": "SMTP account"
+        }
+      },
+      "id": "send_admin_report"
+    }
+  ],
+  "connections": {
+    "Cada día 1 a las 9 AM": {
+      "main": [
+        [
+          {
+            "node": "Leer Clientes Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Clientes Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Clientes Activos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Clientes Activos": {
+      "main": [
+        [
+          {
+            "node": "Calcular IVA y Totales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular IVA y Totales": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email Factura",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email Factura": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Histórico": {
+      "main": [
+        [
+          {
+            "node": "Generar Reporte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Reporte": {
+      "main": [
+        [
+          {
+            "node": "Enviar Reporte Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-15T00:00:00.000Z",
+  "versionId": "1"
+}
