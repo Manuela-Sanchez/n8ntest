@@ -12,7 +12,7 @@
           ]
         }
       },
-      "name": "🕐 Trigger: Día 1 a las 9 AM",
+      "name": "🕐 Trigger Día 1 - 9AM",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [240, 300],
@@ -20,29 +20,22 @@
     },
     {
       "parameters": {
-        "operation": "appendOrUpdate",
+        "operation": "read",
         "documentId": "REEMPLAZA_CON_TU_SHEET_ID",
         "sheetName": "Clientes",
-        "dataMode": "autoMapInputData",
         "options": {}
       },
-      "name": "📊 Leer Clientes desde Sheets",
+      "name": "📊 Leer Clientes",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [440, 300],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "TU_CREDENCIAL_GOOGLE_SHEETS",
-          "name": "Google Sheets account"
-        }
-      },
       "id": "google_sheets_read"
     },
     {
       "parameters": {
-        "jsCode": "// Filtrar y validar clientes activos\nconst items = $input.all();\nconst activeClients = [];\nconst errors = [];\n\nfor (const item of items) {\n  const cliente = item.json;\n  \n  // Validaciones\n  if (cliente.activo !== 'SI') {\n    continue;\n  }\n  \n  if (!cliente.email_cliente || !cliente.email_cliente.includes('@')) {\n    errors.push(`${cliente.cliente || 'Sin nombre'}: email inválido`);\n    continue;\n  }\n  \n  if (!cliente.monto_base || cliente.monto_base <= 0) {\n    errors.push(`${cliente.cliente}: monto inválido`);\n    continue;\n  }\n  \n  activeClients.push(item);\n}\n\nconsole.log(`Clientes válidos: ${activeClients.length}`);\nconsole.log(`Clientes con errores: ${errors.length}`);\n\nif (errors.length > 0) {\n  console.log('Errores encontrados:', errors.join(', '));\n}\n\nreturn activeClients;"
+        "jsCode": "const items = $input.all();\nconst activeClients = [];\n\nfor (const item of items) {\n  const cliente = item.json;\n  \n  if (cliente.activo === 'SI' && cliente.email_cliente && cliente.monto_base > 0) {\n    activeClients.push(item);\n  }\n}\n\nconsole.log('Clientes activos:', activeClients.length);\nreturn activeClients;"
       },
-      "name": "✅ Filtrar y Validar Clientes",
+      "name": "✅ Filtrar Activos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [640, 300],
@@ -50,9 +43,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Calcular totales de facturación con validaciones\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  // Obtener valores con defaults\n  const montoBase = parseFloat(data.monto_base) || 0;\n  const ivaRate = parseFloat(data.iva_rate) || 0.21;\n  const diasVencimiento = parseInt(data.dias_vencimiento) || 30;\n  \n  // Calcular IVA y total (redondeo a 2 decimales)\n  const ivaMonto = Math.round(montoBase * ivaRate * 100) / 100;\n  const montoTotal = Math.round((montoBase + ivaMonto) * 100) / 100;\n  \n  // Generar ID único de factura\n  const now = new Date();\n  const year = now.getFullYear();\n  const month = String(now.getMonth() + 1).padStart(2, '0');\n  const day = String(now.getDate()).padStart(2, '0');\n  const random = Math.random().toString(36).substring(2, 8).toUpperCase();\n  const invoiceId = `FAC-${year}${month}-${random}`;\n  \n  // Calcular fechas\n  const fechaEmision = now.toISOString().split('T')[0];\n  const vencimiento = new Date(now.getTime() + diasVencimiento * 24 * 60 * 60 * 1000);\n  const fechaVencimiento = vencimiento.toISOString().split('T')[0];\n  \n  // Formatear fechas para mostrar\n  const fechaEmisionFormato = `${day}/${month}/${year}`;\n  const vencimientoDay = String(vencimiento.getDate()).padStart(2, '0');\n  const vencimientoMonth = String(vencimiento.getMonth() + 1).padStart(2, '0');\n  const vencimientoYear = vencimiento.getFullYear();\n  const fechaVencimientoFormato = `${vencimientoDay}/${vencimientoMonth}/${vencimientoYear}`;\n  \n  results.push({\n    json: {\n      // Datos originales\n      row_id_en_sheets: data.row_id_en_sheets,\n      cliente: data.cliente,\n      email_cliente: data.email_cliente,\n      concepto: data.concepto || `Servicios correspondientes a ${month}/${year}`,\n      forma_pago: data.forma_pago || 'Transferencia bancaria',\n      notas: data.notas || '',\n      \n      // Datos calculados\n      invoice_id: invoiceId,\n      monto_base: montoBase,\n      iva_rate: ivaRate,\n      iva_monto: ivaMonto,\n      monto_total: montoTotal,\n      fecha_emision: fechaEmision,\n      fecha_vencimiento: fechaVencimiento,\n      fecha_emision_formato: fechaEmisionFormato,\n      fecha_vencimiento_formato: fechaVencimientoFormato,\n      moneda: 'EUR',\n      periodo: `${year}-${month}`,\n      \n      // Para email\n      iva_porcentaje: Math.round(ivaRate * 100),\n      \n      // Metadata\n      timestamp_generacion: now.toISOString()\n    }\n  });\n}\n\nconsole.log(`Facturas generadas: ${results.length}`);\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const montoBase = parseFloat(data.monto_base) || 0;\n  const ivaRate = parseFloat(data.iva_rate) || 0.21;\n  const diasVencimiento = parseInt(data.dias_vencimiento) || 30;\n  const ivaMonto = Math.round(montoBase * ivaRate * 100) / 100;\n  const montoTotal = Math.round((montoBase + ivaMonto) * 100) / 100;\n  const now = new Date();\n  const year = now.getFullYear();\n  const month = String(now.getMonth() + 1).padStart(2, '0');\n  const day = String(now.getDate()).padStart(2, '0');\n  const random = Math.random().toString(36).substring(2, 8).toUpperCase();\n  const invoiceId = 'FAC-' + year + month + '-' + random;\n  const fechaEmision = now.toISOString().split('T')[0];\n  const vencimiento = new Date(now.getTime() + diasVencimiento * 24 * 60 * 60 * 1000);\n  const fechaVencimiento = vencimiento.toISOString().split('T')[0];\n  const fechaEmisionFormato = day + '/' + month + '/' + year;\n  const vencimientoDay = String(vencimiento.getDate()).padStart(2, '0');\n  const vencimientoMonth = String(vencimiento.getMonth() + 1).padStart(2, '0');\n  const vencimientoYear = vencimiento.getFullYear();\n  const fechaVencimientoFormato = vencimientoDay + '/' + vencimientoMonth + '/' + vencimientoYear;\n  \n  results.push({\n    json: {\n      row_id_en_sheets: data.row_id_en_sheets,\n      cliente: data.cliente,\n      email_cliente: data.email_cliente,\n      concepto: data.concepto || 'Servicios mes ' + month + '/' + year,\n      forma_pago: data.forma_pago || 'Transferencia bancaria',\n      invoice_id: invoiceId,\n      monto_base: montoBase,\n      iva_rate: ivaRate,\n      iva_monto: ivaMonto,\n      monto_total: montoTotal,\n      fecha_emision: fechaEmision,\n      fecha_vencimiento: fechaVencimiento,\n      fecha_emision_formato: fechaEmisionFormato,\n      fecha_vencimiento_formato: fechaVencimientoFormato,\n      moneda: 'EUR',\n      periodo: year + '-' + month,\n      iva_porcentaje: Math.round(ivaRate * 100)\n    }\n  });\n}\n\nreturn results;"
       },
-      "name": "💶 Calcular IVA y Totales",
+      "name": "💶 Calcular Totales",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [840, 300],
@@ -64,19 +57,13 @@
         "toEmail": "={{ $json.email_cliente }}",
         "subject": "=Factura {{ $json.invoice_id }} - {{ $json.cliente }}",
         "emailType": "html",
-        "message": "=<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\nbody { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 650px; margin: 0 auto; background: #f5f5f5; }\n.container { background: white; margin: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n.header { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 40px 30px; text-align: center; }\n.header h1 { margin: 0; font-size: 28px; font-weight: 600; }\n.header p { margin: 10px 0 0 0; opacity: 0.9; }\n.content { padding: 40px 30px; }\n.greeting { font-size: 18px; margin-bottom: 20px; }\n.invoice-box { background: #f9fafb; padding: 25px; margin: 25px 0; border-radius: 8px; border-left: 5px solid #2563eb; }\n.invoice-box h3 { margin-top: 0; color: #1e40af; font-size: 20px; }\ntable { width: 100%; margin: 15px 0; border-collapse: collapse; }\ntr { border-bottom: 1px solid #e5e7eb; }\ntd { padding: 12px 0; }\n.label { color: #6b7280; font-weight: 500; }\n.value { text-align: right; font-weight: 600; color: #111827; }\n.total-row { border-top: 3px solid #2563eb !important; background: #eff6ff; }\n.total-row td { padding: 18px 12px !important; font-size: 20px; }\n.total-amount { font-size: 32px; color: #2563eb; font-weight: 700; }\n.highlight-box { background: #dbeafe; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6; }\n.highlight-box strong { color: #1e40af; }\n.footer { background: #f9fafb; padding: 25px 30px; text-align: center; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb; }\n.footer p { margin: 5px 0; }\n.button { display: inline-block; padding: 12px 30px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: 600; }\n</style>\n</head>\n<body>\n\n<div class=\"container\">\n  <div class=\"header\">\n    <h1>📄 Nueva Factura Disponible</h1>\n    <p>Factura Nº {{ $json.invoice_id }}</p>\n  </div>\n  \n  <div class=\"content\">\n    <p class=\"greeting\">Estimado/a <strong>{{ $json.cliente }}</strong>,</p>\n    \n    <p>Le remitimos su factura correspondiente al periodo <strong>{{ $json.periodo }}</strong>.</p>\n    \n    <div class=\"invoice-box\">\n      <h3>📋 Detalles de la Factura</h3>\n      \n      <table>\n        <tr>\n          <td class=\"label\">Número de Factura:</td>\n          <td class=\"value\">{{ $json.invoice_id }}</td>\n        </tr>\n        <tr>\n          <td class=\"label\">Fecha de Emisión:</td>\n          <td class=\"value\">{{ $json.fecha_emision_formato }}</td>\n        </tr>\n        <tr>\n          <td class=\"label\">Fecha de Vencimiento:</td>\n          <td class=\"value\">{{ $json.fecha_vencimiento_formato }}</td>\n        </tr>\n        <tr>\n          <td class=\"label\">Forma de Pago:</td>\n          <td class=\"value\">{{ $json.forma_pago }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    <div class=\"invoice-box\">\n      <h3>💰 Importe de la Factura</h3>\n      \n      <table>\n        <tr>\n          <td class=\"label\">Concepto:</td>\n          <td class=\"value\" style=\"max-width: 300px;\">{{ $json.concepto }}</td>\n        </tr>\n        <tr>\n          <td class=\"label\">Base Imponible:</td>\n          <td class=\"value\">{{ $json.monto_base.toFixed(2) }} €</td>\n        </tr>\n        <tr>\n          <td class=\"label\">IVA ({{ $json.iva_porcentaje }}%):</td>\n          <td class=\"value\">{{ $json.iva_monto.toFixed(2) }} €</td>\n        </tr>\n        <tr class=\"total-row\">\n          <td class=\"label\" style=\"padding-left: 12px;\">TOTAL A PAGAR:</td>\n          <td class=\"value\" style=\"padding-right: 12px;\">\n            <span class=\"total-amount\">{{ $json.monto_total.toFixed(2) }} €</span>\n          </td>\n        </tr>\n      </table>\n    </div>\n    \n    <div class=\"highlight-box\">\n      <p style=\"margin: 0;\"><strong>⏰ Fecha límite de pago:</strong> {{ $json.fecha_vencimiento_formato }}</p>\n      <p style=\"margin: 10px 0 0 0; font-size: 14px;\">Por favor, realice el pago antes de esta fecha para evitar recargos.</p>\n    </div>\n    \n    <p>Si tiene alguna consulta sobre esta factura, no dude en contactarnos. Estaremos encantados de ayudarle.</p>\n    \n    <p style=\"margin-top: 35px;\">Atentamente,</p>\n    <p style=\"margin: 5px 0;\"><strong>Departamento de Facturación</strong></p>\n  </div>\n  \n  <div class=\"footer\">\n    <p><strong>Este es un correo automático</strong></p>\n    <p>Para consultas: facturacion@tuempresa.com | Tel: +34 912 345 678</p>\n    <p style=\"margin-top: 15px; font-size: 11px; color: #9ca3af;\">Tu Empresa S.L. | CIF: B12345678 | Calle Principal 123, Madrid</p>\n  </div>\n</div>\n\n</body>\n</html>",
+        "message": "=<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:650px;margin:0 auto;background:#f5f5f5}.container{background:white;margin:20px;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.1)}.header{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:white;padding:40px 30px;text-align:center}.header h1{margin:0;font-size:28px}.content{padding:40px 30px}.invoice-box{background:#f9fafb;padding:25px;margin:25px 0;border-radius:8px;border-left:5px solid #2563eb}table{width:100%;margin:15px 0;border-collapse:collapse}td{padding:12px 0}.label{color:#6b7280}.value{text-align:right;font-weight:600}.total-row{border-top:3px solid #2563eb;background:#eff6ff}.total-amount{font-size:32px;color:#2563eb;font-weight:700}.footer{background:#f9fafb;padding:25px 30px;text-align:center;color:#6b7280;font-size:13px}</style></head><body><div class=\"container\"><div class=\"header\"><h1>📄 Nueva Factura</h1><p>{{ $json.invoice_id }}</p></div><div class=\"content\"><p>Estimado/a <strong>{{ $json.cliente }}</strong>,</p><div class=\"invoice-box\"><h3>📋 Detalles</h3><table><tr><td class=\"label\">Factura:</td><td class=\"value\">{{ $json.invoice_id }}</td></tr><tr><td class=\"label\">Emisión:</td><td class=\"value\">{{ $json.fecha_emision_formato }}</td></tr><tr><td class=\"label\">Vencimiento:</td><td class=\"value\">{{ $json.fecha_vencimiento_formato }}</td></tr></table></div><div class=\"invoice-box\"><h3>💰 Importe</h3><table><tr><td class=\"label\">Base:</td><td class=\"value\">{{ $json.monto_base.toFixed(2) }} €</td></tr><tr><td class=\"label\">IVA ({{ $json.iva_porcentaje }}%):</td><td class=\"value\">{{ $json.iva_monto.toFixed(2) }} €</td></tr><tr class=\"total-row\"><td class=\"label\">TOTAL:</td><td class=\"value\"><span class=\"total-amount\">{{ $json.monto_total.toFixed(2) }} €</span></td></tr></table></div><p>Gracias por su confianza.</p><p>Atentamente,<br><strong>Equipo de Facturación</strong></p></div><div class=\"footer\"><p>facturacion@tuempresa.com</p></div></div></body></html>",
         "options": {}
       },
-      "name": "📧 Enviar Email a Cliente",
+      "name": "📧 Enviar Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [1040, 300],
-      "credentials": {
-        "smtp": {
-          "id": "TU_CREDENCIAL_SMTP",
-          "name": "SMTP account"
-        }
-      },
       "id": "send_email"
     },
     {
@@ -84,185 +71,62 @@
         "operation": "append",
         "documentId": "REEMPLAZA_CON_TU_SHEET_ID",
         "sheetName": "Facturas Emitidas",
-        "columns": "invoice_id,cliente,email_cliente,monto_base,iva_monto,monto_total,fecha_emision,fecha_vencimiento,periodo,concepto,forma_pago",
+        "columns": "invoice_id,cliente,monto_total,fecha_emision,periodo",
         "options": {}
       },
-      "name": "📝 Guardar en Histórico Sheets",
+      "name": "📝 Guardar Histórico",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [1240, 300],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "TU_CREDENCIAL_GOOGLE_SHEETS",
-          "name": "Google Sheets account"
-        }
-      },
       "id": "save_history"
     },
     {
       "parameters": {
-        "operation": "update",
-        "documentId": "REEMPLAZA_CON_TU_SHEET_ID",
-        "sheetName": "Clientes",
-        "columns": "estado,fecha_ultima_factura",
-        "options": {
-          "lookupColumn": "row_id_en_sheets"
-        }
+        "jsCode": "const items = $input.all();\nlet total = 0;\nconst clientes = [];\n\nfor (const item of items) {\n  total += item.json.monto_total;\n  clientes.push({\n    cliente: item.json.cliente,\n    factura: item.json.invoice_id,\n    total: item.json.monto_total.toFixed(2)\n  });\n}\n\nconst now = new Date();\nconst periodo = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');\n\nreturn [{\n  json: {\n    periodo: periodo,\n    total_facturas: items.length,\n    total_facturado: total.toFixed(2),\n    clientes: clientes\n  }\n}];"
       },
-      "name": "🔄 Actualizar Estado Cliente",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "name": "📊 Generar Reporte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1440, 300],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "TU_CREDENCIAL_GOOGLE_SHEETS",
-          "name": "Google Sheets account"
-        }
-      },
-      "id": "update_client_status",
-      "disabled": false
-    },
-    {
-      "parameters": {
-        "jsCode": "// Actualizar datos del cliente con estado\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  results.push({\n    json: {\n      row_id_en_sheets: data.row_id_en_sheets,\n      estado: `Emitida ${data.fecha_emision_formato}`,\n      fecha_ultima_factura: data.fecha_emision\n    }\n  });\n}\n\nreturn results;"
-      },
-      "name": "📋 Preparar Datos para Update",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1240, 450],
-      "id": "prepare_update_data"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Generar resumen estadístico del proceso\nconst items = $input.all();\n\nlet totalBase = 0;\nlet totalIVA = 0;\nlet totalFacturado = 0;\nconst detalles = [];\nconst clientesNombres = [];\n\nfor (const item of items) {\n  totalBase += item.json.monto_base;\n  totalIVA += item.json.iva_monto;\n  totalFacturado += item.json.monto_total;\n  \n  detalles.push({\n    cliente: item.json.cliente,\n    factura: item.json.invoice_id,\n    total: item.json.monto_total.toFixed(2),\n    fecha: item.json.fecha_emision_formato\n  });\n  \n  clientesNombres.push(item.json.cliente);\n}\n\nconst now = new Date();\nconst periodo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;\nconst fechaFormato = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;\n\nreturn [{\n  json: {\n    periodo,\n    fecha: fechaFormato,\n    fecha_iso: now.toISOString(),\n    total_facturas: items.length,\n    total_base: totalBase.toFixed(2),\n    total_iva: totalIVA.toFixed(2),\n    total_facturado: totalFacturado.toFixed(2),\n    promedio_factura: (totalFacturado / items.length).toFixed(2),\n    clientes_list: clientesNombres.join(', '),\n    detalles_html: detalles.map(d => \n      `<tr>\n        <td style=\"padding: 10px 12px; border-bottom: 1px solid #e5e7eb;\">${d.cliente}</td>\n        <td style=\"padding: 10px 12px; border-bottom: 1px solid #e5e7eb;\">${d.factura}</td>\n        <td style=\"padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;\">${d.fecha}</td>\n        <td style=\"padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold; color: #10b981;\">${d.total} €</td>\n      </tr>`\n    ).join('')\n  }\n}];"
-      },
-      "name": "📊 Generar Reporte Estadístico",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1640, 300],
       "id": "generate_report"
     },
     {
       "parameters": {
         "fromEmail": "sistema@tuempresa.com",
         "toEmail": "admin@tuempresa.com",
-        "subject": "=📊 Reporte Facturación {{ $json.periodo }} - {{ $json.total_facturas }} facturas emitidas",
+        "subject": "=📊 Reporte Facturación {{ $json.periodo }}",
         "emailType": "html",
-        "message": "=<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\nbody { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; background: #f5f5f5; }\n.container { background: white; margin: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }\n.header h1 { margin: 0; font-size: 32px; font-weight: 600; }\n.header .emoji { font-size: 48px; margin-bottom: 10px; }\n.header p { margin: 10px 0 0 0; font-size: 18px; opacity: 0.95; }\n.content { padding: 40px; background: #fafafa; }\n.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }\n.stat-box { background: white; padding: 25px; border-radius: 10px; text-align: center; border: 2px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }\n.stat-label { color: #6b7280; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }\n.stat-value { font-size: 36px; font-weight: 700; color: #667eea; margin: 5px 0; }\n.stat-value.green { color: #10b981; }\n.stat-value.blue { color: #3b82f6; }\n.stat-value.orange { color: #f59e0b; }\n.section { background: white; padding: 25px; border-radius: 10px; margin: 20px 0; }\n.section h2 { color: #667eea; margin-top: 0; font-size: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px; }\ntable { width: 100%; border-collapse: collapse; margin: 15px 0; }\nth { background: #f3f4f6; padding: 15px 12px; text-align: left; border-bottom: 3px solid #667eea; font-weight: 600; color: #374151; }\ntd { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }\n.summary-box { background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%); padding: 25px; border-radius: 10px; border-left: 5px solid #3b82f6; margin: 25px 0; }\n.summary-box h3 { margin-top: 0; color: #1e40af; }\n.summary-box ul { margin: 10px 0; padding-left: 25px; }\n.summary-box li { margin: 8px 0; color: #1e3a8a; }\n.footer { background: #f9fafb; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb; }\n.footer p { margin: 5px 0; color: #6b7280; }\n.badge { display: inline-block; padding: 5px 12px; background: #10b981; color: white; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 10px; }\n</style>\n</head>\n<body>\n\n<div class=\"container\">\n  <div class=\"header\">\n    <div class=\"emoji\">📊</div>\n    <h1>Reporte de Facturación Mensual</h1>\n    <p>Periodo: {{ $json.periodo }} <span class=\"badge\">{{ $json.total_facturas }} facturas</span></p>\n    <p style=\"font-size: 14px; opacity: 0.8; margin-top: 10px;\">Generado: {{ $json.fecha }}</p>\n  </div>\n  \n  <div class=\"content\">\n    \n    <h2 style=\"color: #667eea; font-size: 26px; margin-bottom: 25px;\">📈 Resumen Ejecutivo</h2>\n    \n    <div class=\"stats-grid\">\n      <div class=\"stat-box\">\n        <div class=\"stat-label\">Facturas Emitidas</div>\n        <div class=\"stat-value\">{{ $json.total_facturas }}</div>\n      </div>\n      \n      <div class=\"stat-box\">\n        <div class=\"stat-label\">Total Facturado</div>\n        <div class=\"stat-value green\">{{ $json.total_facturado }} €</div>\n      </div>\n      \n      <div class=\"stat-box\">\n        <div class=\"stat-label\">Base Imponible</div>\n        <div class=\"stat-value blue\">{{ $json.total_base }} €</div>\n      </div>\n      \n      <div class=\"stat-box\">\n        <div class=\"stat-label\">IVA Total</div>\n        <div class=\"stat-value orange\">{{ $json.total_iva }} €</div>\n      </div>\n    </div>\n    \n    <div class=\"section\">\n      <p style=\"font-size: 16px; color: #4b5563; margin: 0;\">\n        <strong>Promedio por factura:</strong> \n        <span style=\"font-size: 20px; color: #667eea; font-weight: 700;\">{{ $json.promedio_factura }} €</span>\n      </p>\n    </div>\n    \n    <div class=\"section\">\n      <h2>👥 Detalle por Cliente</h2>\n      \n      <table>\n        <thead>\n          <tr>\n            <th>Cliente</th>\n            <th>Nº Factura</th>\n            <th style=\"text-align: center;\">Fecha</th>\n            <th style=\"text-align: right;\">Importe</th>\n          </tr>\n        </thead>\n        <tbody>\n          {{ $json.detalles_html }}\n        </tbody>\n      </table>\n    </div>\n    \n    <div class=\"summary-box\">\n      <h3>✅ Estado del Proceso</h3>\n      <ul>\n        <li>✅ <strong>{{ $json.total_facturas }}</strong> facturas generadas correctamente</li>\n        <li>✅ Emails enviados a todos los clientes</li>\n        <li>✅ Histórico actualizado en Google Sheets</li>\n        <li>✅ Estados de clientes actualizados</li>\n        <li>✅ Total facturado: <strong>{{ $json.total_facturado }} €</strong></li>\n      </ul>\n      <p style=\"margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid #93c5fd; color: #1e3a8a; font-size: 14px;\">\n        <strong>Clientes facturados:</strong> {{ $json.clientes_list }}\n      </p>\n    </div>\n    \n  </div>\n  \n  <div class=\"footer\">\n    <p style=\"font-weight: 600; font-size: 16px; color: #374151;\">Sistema de Facturación Automática</p>\n    <p style=\"font-size: 13px;\">Powered by n8n | Proceso completado exitosamente</p>\n    <p style=\"font-size: 11px; margin-top: 10px; color: #9ca3af;\">Este reporte se genera automáticamente cada día 1 del mes</p>\n  </div>\n</div>\n\n</body>\n</html>",
+        "message": "=<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body{font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#f5f5f5}.container{background:white;margin:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:40px;text-align:center}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding:30px}.stat-box{background:white;padding:25px;border-radius:10px;text-align:center;border:2px solid #e5e7eb}.stat-label{color:#6b7280;font-size:14px}.stat-value{font-size:36px;font-weight:700;color:#667eea;margin:5px 0}table{width:100%;border-collapse:collapse;margin:20px 0}th{background:#f3f4f6;padding:12px;text-align:left}td{padding:10px;border-bottom:1px solid #e5e7eb}.footer{background:#f9fafb;padding:20px;text-align:center}</style></head><body><div class=\"container\"><div class=\"header\"><h1>📊 Reporte Mensual</h1><p>{{ $json.periodo }}</p></div><div class=\"stats\"><div class=\"stat-box\"><div class=\"stat-label\">Facturas</div><div class=\"stat-value\">{{ $json.total_facturas }}</div></div><div class=\"stat-box\"><div class=\"stat-label\">Total</div><div class=\"stat-value\" style=\"color:#10b981\">{{ $json.total_facturado }} €</div></div></div><div style=\"padding:0 30px 30px\"><h2>Detalle</h2><table><thead><tr><th>Cliente</th><th>Factura</th><th style=\"text-align:right\">Importe</th></tr></thead><tbody>{{#each $json.clientes}}<tr><td>{{this.cliente}}</td><td>{{this.factura}}</td><td style=\"text-align:right;font-weight:bold\">{{this.total}} €</td></tr>{{/each}}</tbody></table></div><div class=\"footer\"><p>Sistema de Facturación Automática</p></div></div></body></html>",
         "options": {}
       },
-      "name": "📨 Enviar Reporte a Admin",
+      "name": "📨 Reporte Admin",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [1840, 300],
-      "credentials": {
-        "smtp": {
-          "id": "TU_CREDENCIAL_SMTP",
-          "name": "SMTP account"
-        }
-      },
+      "position": [1640, 300],
       "id": "send_admin_report"
     }
   ],
   "connections": {
-    "🕐 Trigger: Día 1 a las 9 AM": {
-      "main": [
-        [
-          {
-            "node": "📊 Leer Clientes desde Sheets",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "🕐 Trigger Día 1 - 9AM": {
+      "main": [[{"node": "📊 Leer Clientes", "type": "main", "index": 0}]]
     },
-    "📊 Leer Clientes desde Sheets": {
-      "main": [
-        [
-          {
-            "node": "✅ Filtrar y Validar Clientes",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "📊 Leer Clientes": {
+      "main": [[{"node": "✅ Filtrar Activos", "type": "main", "index": 0}]]
     },
-    "✅ Filtrar y Validar Clientes": {
-      "main": [
-        [
-          {
-            "node": "💶 Calcular IVA y Totales",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "✅ Filtrar Activos": {
+      "main": [[{"node": "💶 Calcular Totales", "type": "main", "index": 0}]]
     },
-    "💶 Calcular IVA y Totales": {
-      "main": [
-        [
-          {
-            "node": "📧 Enviar Email a Cliente",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "📋 Preparar Datos para Update",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "💶 Calcular Totales": {
+      "main": [[{"node": "📧 Enviar Email", "type": "main", "index": 0}]]
     },
-    "📧 Enviar Email a Cliente": {
-      "main": [
-        [
-          {
-            "node": "📝 Guardar en Histórico Sheets",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "📧 Enviar Email": {
+      "main": [[{"node": "📝 Guardar Histórico", "type": "main", "index": 0}]]
     },
-    "📝 Guardar en Histórico Sheets": {
-      "main": [
-        [
-          {
-            "node": "📊 Generar Reporte Estadístico",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "📝 Guardar Histórico": {
+      "main": [[{"node": "📊 Generar Reporte", "type": "main", "index": 0}]]
     },
-    "🔄 Actualizar Estado Cliente": {
-      "main": [
-        [
-        ]
-      ]
-    },
-    "📋 Preparar Datos para Update": {
-      "main": [
-        [
-          {
-            "node": "🔄 Actualizar Estado Cliente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📊 Generar Reporte Estadístico": {
-      "main": [
-        [
-          {
-            "node": "📨 Enviar Reporte a Admin",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "📊 Generar Reporte": {
+      "main": [[{"node": "📨 Reporte Admin", "type": "main", "index": 0}]]
     }
   },
   "pinData": {},
