@@ -53,7 +53,7 @@ export class VariablesService {
 	}
 
 	async updateCache(): Promise<void> {
-		// TODO: log update cache metric
+		this.eventService.emit('variables-cache-updated');
 		const variables = await this.findAll();
 		await this.cacheService.set('variables', variables);
 	}
