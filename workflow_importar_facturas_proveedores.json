@@ -1,0 +1,272 @@
+{
+  "name": "Importar Facturas Proveedores desde Gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * 5"
+            }
+          ]
+        }
+      },
+      "name": "⏰ Trigger Viernes 19:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "id": "schedule_trigger",
+      "notes": "Se ejecuta cada viernes a las 19:00 para ahorrar créditos"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": []
+        },
+        "filters": {
+          "labelIds": ["Label_FACTURAS_RECIBIDAS"],
+          "readStatus": "unread"
+        },
+        "options": {
+          "maxResults": 500
+        }
+      },
+      "name": "📧 Gmail: Watch Emails",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "id": "gmail_watch",
+      "notes": "Lee correos con etiqueta 'facturas recibidas' que no están leídos"
+    },
+    {
+      "parameters": {
+        "messageId": "={{ $json.id }}"
+      },
+      "name": "📎 Gmail: Listar Adjuntos",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "id": "gmail_attachments",
+      "parameters": {
+        "operation": "getAttachments",
+        "messageId": "={{ $json.id }}",
+        "options": {}
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "={{ $json.attachments }}",
+        "options": {}
+      },
+      "name": "🔄 Iterador Adjuntos",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [900, 300],
+      "id": "iterator"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.mimeType }}",
+              "operation": "equals",
+              "value2": "application/pdf"
+            }
+          ]
+        }
+      },
+      "name": "🔍 Filtrar: Solo PDFs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "id": "filter_pdf"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.filename }}",
+        "driveId": "REEMPLAZA_CON_TU_FOLDER_ID",
+        "folderId": "REEMPLAZA_CON_TU_FOLDER_ID",
+        "options": {
+          "googleFileConvert": true,
+          "mimeType": "application/vnd.google-apps.document"
+        }
+      },
+      "name": "☁️ Drive: Subir como Google Doc",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1340, 300],
+      "id": "upload_to_drive_doc",
+      "notes": "Sube el PDF y lo convierte a Google Docs para extraer texto"
+    },
+    {
+      "parameters": {
+        "documentId": "={{ $json.id }}",
+        "options": {}
+      },
+      "name": "📄 Google Docs: Leer Contenido",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "id": "read_doc_content",
+      "parameters": {
+        "operation": "get",
+        "documentId": "={{ $json.id }}",
+        "options": {
+          "simple": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "text": "={{ $json.body }}",
+        "prompt": "Eres un experto analizando facturas de proveedores. Vas a recibir un texto desestructurado extraído de una factura PDF y como experto debes saber extraer la siguiente información estructurada de los siguientes 14 campos:\n\nImportante: Si hay algún campo que no encuentras el dato, deja el campo en blanco. No inventes información.\n\nEstos son los 14 campos a rellenar (aunque probablemente no encuentres los datos de todos, rellena los que encuentres y el resto los dejas en blanco):\n\nIMPORTANTE: Los únicos receptores de la factura pueden ser:\n- NIF: REEMPLAZA_CON_TU_NIF\n- B-REEMPLAZA_CON_TU_NIF (con guion)\n\nSi encuentras otro NIF como receptor, probablemente sea el emisor.\n\nExtrae:\n1. fecha_factura\n2. numero_factura\n3. descripcion (descripción general de lo que se está pagando)\n4. base_imponible (solo el número, sin símbolo €)\n5. iva (solo el importe de IVA, sin símbolo €)\n6. retencion (si existe, sino déjalo vacío)\n7. importe_total (solo el número, sin símbolo €)\n8. familia (categoría del gasto, ej: Asesoría, Marketing, etc)\n9. cif_emisor\n10. razon_social_emisor\n11. domicilio_emisor\n12. codigo_postal_emisor\n13. poblacion_emisor\n14. email_emisor (si lo encuentras)\n\nDevuelve SOLO un objeto JSON con estos campos.",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "name": "🤖 ChatGPT: Extraer Datos",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1780, 300],
+      "id": "chatgpt_parse",
+      "notes": "Usa GPT-4o-mini para extraer datos estructurados de la factura"
+    },
+    {
+      "parameters": {
+        "documentId": "={{ $('Drive: Subir como Google Doc').item.json.id }}",
+        "options": {}
+      },
+      "name": "🗑️ Google Docs: Borrar Temporal",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2000, 300],
+      "id": "delete_temp_doc",
+      "parameters": {
+        "resource": "file",
+        "operation": "delete",
+        "fileId": "={{ $('Drive: Subir como Google Doc').item.json.id }}"
+      },
+      "notes": "Borra el Google Doc temporal que solo usamos para extraer texto"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "=FAC-{{ $json.numero_factura }}-{{ $json.razon_social_emisor }}-{{ $json.fecha_factura }}.pdf",
+        "driveId": "REEMPLAZA_CON_TU_FOLDER_ID",
+        "folderId": "REEMPLAZA_CON_TU_FOLDER_ID",
+        "binaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "name": "💾 Drive: Guardar PDF Final",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2220, 300],
+      "id": "save_final_pdf",
+      "notes": "Guarda el PDF original con nombre formateado"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "REEMPLAZA_CON_TU_SHEET_ID",
+        "range": "Facturas!A:P",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "A": "={{ $json.fecha_factura }}",
+            "B": "={{ $json.numero_factura }}",
+            "C": "={{ $json.descripcion }}",
+            "D": "={{ parseFloat($json.base_imponible).toFixed(2).replace('.', ',') }}",
+            "E": "={{ parseFloat($json.iva).toFixed(2).replace('.', ',') }}",
+            "F": "={{ $json.retencion ? parseFloat($json.retencion).toFixed(2).replace('.', ',') : '' }}",
+            "G": "={{ parseFloat($json.importe_total).toFixed(2).replace('.', ',') }}",
+            "H": "={{ $json.familia }}",
+            "I": "={{ $json.cif_emisor }}",
+            "J": "={{ $json.razon_social_emisor }}",
+            "K": "={{ $json.domicilio_emisor }}",
+            "L": "={{ $json.codigo_postal_emisor }}",
+            "M": "={{ $json.poblacion_emisor }}",
+            "N": "={{ $json.email_emisor }}",
+            "O": "={{ $json.cif_receptor }}",
+            "P": "={{ $('Drive: Guardar PDF Final').item.json.webViewLink }}"
+          }
+        }
+      },
+      "name": "📊 Google Sheets: Guardar Datos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [2440, 300],
+      "id": "save_to_sheets",
+      "notes": "Guarda todos los datos extraídos en la hoja de cálculo"
+    },
+    {
+      "parameters": {
+        "messageId": "={{ $('Gmail: Watch Emails').item.json.id }}",
+        "operation": "addLabels",
+        "labelIds": ["INBOX"]
+      },
+      "name": "✅ Gmail: Marcar como Leído",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [2660, 300],
+      "id": "mark_as_read",
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail: Watch Emails').item.json.id }}"
+      },
+      "notes": "Marca el correo como leído para indicar que fue procesado"
+    }
+  ],
+  "connections": {
+    "⏰ Trigger Viernes 19:00": {
+      "main": [[{"node": "📧 Gmail: Watch Emails", "type": "main", "index": 0}]]
+    },
+    "📧 Gmail: Watch Emails": {
+      "main": [[{"node": "📎 Gmail: Listar Adjuntos", "type": "main", "index": 0}]]
+    },
+    "📎 Gmail: Listar Adjuntos": {
+      "main": [[{"node": "🔄 Iterador Adjuntos", "type": "main", "index": 0}]]
+    },
+    "🔄 Iterador Adjuntos": {
+      "main": [[{"node": "🔍 Filtrar: Solo PDFs", "type": "main", "index": 0}]]
+    },
+    "🔍 Filtrar: Solo PDFs": {
+      "main": [[{"node": "☁️ Drive: Subir como Google Doc", "type": "main", "index": 0}]]
+    },
+    "☁️ Drive: Subir como Google Doc": {
+      "main": [[{"node": "📄 Google Docs: Leer Contenido", "type": "main", "index": 0}]]
+    },
+    "📄 Google Docs: Leer Contenido": {
+      "main": [[{"node": "🤖 ChatGPT: Extraer Datos", "type": "main", "index": 0}]]
+    },
+    "🤖 ChatGPT: Extraer Datos": {
+      "main": [[{"node": "🗑️ Google Docs: Borrar Temporal", "type": "main", "index": 0}]]
+    },
+    "🗑️ Google Docs: Borrar Temporal": {
+      "main": [[{"node": "💾 Drive: Guardar PDF Final", "type": "main", "index": 0}]]
+    },
+    "💾 Drive: Guardar PDF Final": {
+      "main": [[{"node": "📊 Google Sheets: Guardar Datos", "type": "main", "index": 0}]]
+    },
+    "📊 Google Sheets: Guardar Datos": {
+      "main": [[{"node": "✅ Gmail: Marcar como Leído", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["facturas", "automatizacion", "proveedores"],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-15T00:00:00.000Z",
+  "versionId": "1.0"
+}
