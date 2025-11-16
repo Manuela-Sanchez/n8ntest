@@ -1,0 +1,562 @@
+/* ===== PRESUPUESTO - ESTILOS ESPECÍFICOS ===== */
+
+/* Hero Presupuesto */
+.budget-hero {
+    padding: 120px 0 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+}
+
+.budget-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.budget-hero p {
+    font-size: 1.125rem;
+    opacity: 0.95;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Calculadora de Presupuesto */
+.budget-calculator {
+    padding: 60px 0;
+    background: #F7FAFC;
+}
+
+.calculator-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Panel de Servicios */
+.services-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #E2E8F0;
+}
+
+.panel-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0A0A0A;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: #3B82F6;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    transition: color 0.2s;
+}
+
+.btn-text:hover {
+    color: #2563EB;
+    text-decoration: underline;
+}
+
+/* Categorías de Servicios */
+.service-category {
+    margin-bottom: 2rem;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #F7FAFC;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 0.5rem;
+}
+
+.category-header:hover {
+    background: #EDF2F7;
+}
+
+.category-icon {
+    font-size: 1.5rem;
+}
+
+.category-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0A0A0A;
+    flex: 1;
+}
+
+.category-count {
+    font-size: 0.875rem;
+    color: #718096;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.category-count.active {
+    background: #3B82F6;
+    color: white;
+}
+
+/* Servicios dentro de Categoría */
+.category-services {
+    padding-left: 0.5rem;
+}
+
+.service-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.5rem;
+}
+
+.service-item:hover {
+    background: #F7FAFC;
+}
+
+.service-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #3B82F6;
+}
+
+.service-name {
+    flex: 1;
+    font-size: 0.9375rem;
+    color: #2D3748;
+}
+
+.service-price {
+    font-weight: 600;
+    color: #3B82F6;
+    font-size: 0.875rem;
+}
+
+.service-item:has(input:checked) {
+    background: #EBF5FF;
+    border-left: 3px solid #3B82F6;
+}
+
+/* Control de Horas */
+.hours-control {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #F7FAFC;
+    border-radius: 8px;
+    border: 2px solid #E2E8F0;
+}
+
+.hours-control label {
+    display: block;
+    margin-bottom: 1rem;
+    color: #2D3748;
+    font-size: 0.9375rem;
+}
+
+.hours-control strong {
+    color: #0A0A0A;
+}
+
+#hoursValue {
+    color: #3B82F6;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+#hoursSlider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #E2E8F0;
+    outline: none;
+    -webkit-appearance: none;
+    margin-bottom: 0.5rem;
+}
+
+#hoursSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3B82F6;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+#hoursSlider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3B82F6;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+.hours-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #718096;
+    margin-top: 0.5rem;
+}
+
+/* Panel de Resumen */
+.summary-panel {
+    position: relative;
+}
+
+.summary-sticky {
+    position: sticky;
+    top: 100px;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.summary-sticky h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0A0A0A;
+    margin-bottom: 1.5rem;
+}
+
+.summary-sticky h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2D3748;
+    margin-bottom: 0.75rem;
+}
+
+/* Servicios Seleccionados */
+.selected-services {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.selected-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.selected-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.selected-list::-webkit-scrollbar-track {
+    background: #F7FAFC;
+    border-radius: 3px;
+}
+
+.selected-list::-webkit-scrollbar-thumb {
+    background: #CBD5E0;
+    border-radius: 3px;
+}
+
+.selected-list::-webkit-scrollbar-thumb:hover {
+    background: #A0AEC0;
+}
+
+.empty-state {
+    color: #A0AEC0;
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.selected-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: #F7FAFC;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.selected-item-name {
+    color: #2D3748;
+}
+
+.selected-item-price {
+    color: #3B82F6;
+    font-weight: 600;
+}
+
+/* Desglose del Presupuesto */
+.budget-breakdown {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    font-size: 0.9375rem;
+}
+
+.breakdown-item.discount {
+    color: #10B981;
+}
+
+.breakdown-item.discount span:last-child {
+    color: #10B981;
+    font-weight: 600;
+}
+
+.breakdown-item.total {
+    padding-top: 1rem;
+    border-top: 2px solid #E2E8F0;
+    font-size: 1.25rem;
+}
+
+.breakdown-item.total span {
+    color: #0A0A0A;
+}
+
+.breakdown-note {
+    text-align: center;
+    margin-top: 0.5rem;
+    color: #718096;
+}
+
+#avgPrice {
+    font-weight: 600;
+    color: #3B82F6;
+}
+
+/* Info de Descuentos */
+.discount-info {
+    background: #F7FAFC;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.discount-info h4 {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.discount-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.discount-info li {
+    font-size: 0.8125rem;
+    color: #4A5568;
+    padding: 0.25rem 0;
+}
+
+.discount-info strong {
+    color: #10B981;
+}
+
+/* Botones de Acción */
+.action-buttons {
+    margin-bottom: 1.5rem;
+}
+
+.action-buttons .btn {
+    margin-bottom: 0.75rem;
+}
+
+/* Garantía */
+.guarantee {
+    background: #EBF5FF;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #3B82F6;
+}
+
+.guarantee p {
+    font-size: 0.875rem;
+    color: #2D3748;
+    margin: 0.25rem 0;
+}
+
+.guarantee strong {
+    color: #3B82F6;
+    margin-right: 0.5rem;
+}
+
+/* Planes Predefinidos */
+.preset-plans {
+    padding: 60px 0;
+    background: white;
+    text-align: center;
+}
+
+.preset-plans h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0A0A0A;
+    margin-bottom: 0.5rem;
+}
+
+.preset-plans > p {
+    font-size: 1.125rem;
+    color: #718096;
+    margin-bottom: 3rem;
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.preset-card {
+    background: white;
+    border: 2px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.preset-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.preset-card.featured {
+    border-color: #3B82F6;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+.preset-card .badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3B82F6;
+    color: white;
+    padding: 0.25rem 1rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.preset-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0A0A0A;
+    margin-bottom: 0.5rem;
+}
+
+.plan-hours {
+    font-size: 1.125rem;
+    color: #3B82F6;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.plan-services {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    text-align: left;
+}
+
+.plan-services li {
+    padding: 0.5rem 0;
+    color: #4A5568;
+    position: relative;
+    padding-left: 1.5rem;
+    font-size: 0.9375rem;
+}
+
+.plan-services li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #10B981;
+    font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+    .calculator-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-sticky {
+        position: static;
+    }
+
+    .budget-hero h1 {
+        font-size: 2rem;
+    }
+
+    .budget-hero p {
+        font-size: 1rem;
+    }
+
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .budget-hero {
+        padding: 80px 0 40px;
+    }
+
+    .budget-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .services-panel,
+    .summary-sticky {
+        padding: 1.5rem;
+    }
+
+    .category-header h3 {
+        font-size: 1rem;
+    }
+
+    .service-item {
+        padding: 0.75rem;
+    }
+
+    .service-name {
+        font-size: 0.875rem;
+    }
+}
