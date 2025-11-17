@@ -32,6 +32,40 @@ DÍA 10
 └─ Alerta de seguimiento al equipo de ventas
 ```
 
+## 📊 Plantilla de Excel Incluida
+
+Este paquete incluye un archivo Excel listo para importar: **`Plantilla_Clientes_Onboarding.xlsx`**
+
+### ¿Qué incluye?
+
+✅ **Hoja "Clientes"** con:
+- 14 columnas preconfiguradas (exactamente como las necesita el workflow)
+- 3 filas de datos de ejemplo para ver el formato
+- Encabezados con formato profesional (fondo azul, texto blanco)
+- Anchos de columna optimizados
+- Formato de moneda para precios
+- Primera fila congelada para mejor navegación
+
+✅ **Hoja "Instrucciones"** con:
+- Guía paso a paso para importar a Google Sheets
+- Descripción detallada de cada columna
+- Estados posibles del proceso
+- Tips y solución de problemas
+
+### Cómo usar la plantilla:
+
+1. **Descarga** el archivo `Plantilla_Clientes_Onboarding.xlsx`
+2. **Ve a** [Google Sheets](https://sheets.google.com)
+3. **Haz clic en** "Archivo" → "Importar"
+4. **Selecciona** "Subir" y elige el archivo Excel
+5. **Importa** los datos
+6. **Copia** el ID de la URL (ver instrucciones en el archivo)
+7. **Pega** el ID en los nodos de n8n correspondientes
+
+**¡Listo!** Tu base de datos está configurada y lista para recibir clientes automáticamente.
+
+---
+
 ## 📦 Requisitos Previos
 
 ### 1. Credenciales Necesarias
