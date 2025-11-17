@@ -1,0 +1,475 @@
+{
+  "name": "🎯 Client Onboarding - Automatización Completa",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000001",
+      "name": "Nuevo Cliente (Formulario)",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "webhookId": "client-onboarding-webhook-id",
+      "parameters": {
+        "path": "nuevo-cliente",
+        "formTitle": "Formulario de Registro de Nuevo Cliente",
+        "formDescription": "Complete la información del nuevo cliente para iniciar el proceso de onboarding automático",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nombre Completo",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Teléfono",
+              "fieldType": "text",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Empresa",
+              "fieldType": "text",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Plan Contratado",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Básico - $29/mes"
+                  },
+                  {
+                    "option": "Profesional - $79/mes"
+                  },
+                  {
+                    "option": "Empresarial - $199/mes"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Notas Adicionales",
+              "fieldType": "textarea",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {
+          "formSubmittedText": "¡Gracias! Su registro ha sido procesado. Recibirá un email de bienvenida en breve."
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000002",
+      "name": "Preparar Datos del Cliente",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "clientId",
+              "value": "={{ 'CLI-' + $now.format('YYYYMMDD') + '-' + Math.floor(Math.random() * 10000) }}",
+              "type": "string"
+            },
+            {
+              "name": "onboardingDate",
+              "value": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "value": "Onboarding Iniciado",
+              "type": "string"
+            },
+            {
+              "name": "planPrice",
+              "value": "={{ $('Nuevo Cliente (Formulario)').item.json['Plan Contratado'].includes('Básico') ? 29 : $('Nuevo Cliente (Formulario)').item.json['Plan Contratado'].includes('Profesional') ? 79 : 199 }}",
+              "type": "number"
+            },
+            {
+              "name": "planType",
+              "value": "={{ $('Nuevo Cliente (Formulario)').item.json['Plan Contratado'].split(' - ')[0] }}",
+              "type": "string"
+            },
+            {
+              "name": "invoiceNumber",
+              "value": "={{ 'INV-' + $now.format('YYYYMMDD') + '-' + Math.floor(Math.random() * 10000) }}",
+              "type": "string"
+            },
+            {
+              "name": "paymentDueDate",
+              "value": "={{ $now.plus({ days: 15 }).format('YYYY-MM-DD') }}",
+              "type": "string"
+            },
+            {
+              "name": "followUpDate",
+              "value": "={{ $now.plus({ days: 10 }).format('YYYY-MM-DD') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000003",
+      "name": "Guardar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [680, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE",
+          "mode": "url",
+          "__regex": "https://docs.google.com/spreadsheets/d/([0-9a-zA-Z-_]+)(?:/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Clientes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID Cliente": "={{ $json.clientId }}",
+            "Fecha Registro": "={{ $json.onboardingDate }}",
+            "Nombre": "={{ $('Nuevo Cliente (Formulario)').item.json['Nombre Completo'] }}",
+            "Email": "={{ $('Nuevo Cliente (Formulario)').item.json['Email'] }}",
+            "Teléfono": "={{ $('Nuevo Cliente (Formulario)').item.json['Teléfono'] || 'No proporcionado' }}",
+            "Empresa": "={{ $('Nuevo Cliente (Formulario)').item.json['Empresa'] || 'No proporcionado' }}",
+            "Plan": "={{ $json.planType }}",
+            "Precio": "={{ $json.planPrice }}",
+            "Estado": "={{ $json.status }}",
+            "Número Factura": "={{ $json.invoiceNumber }}",
+            "Fecha Vencimiento Pago": "={{ $json.paymentDueDate }}",
+            "Fecha Seguimiento": "={{ $json.followUpDate }}",
+            "Notas": "={{ $('Nuevo Cliente (Formulario)').item.json['Notas Adicionales'] || '' }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Clientes"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000004",
+      "name": "Email de Bienvenida",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [900, 200],
+      "parameters": {
+        "fromEmail": "bienvenida@tuempresa.com",
+        "toEmail": "={{ $('Nuevo Cliente (Formulario)').item.json['Email'] }}",
+        "subject": "¡Bienvenido/a a nuestra plataforma! 🎉",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }\n    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }\n    .highlight { background: #fff; padding: 15px; border-left: 4px solid #667eea; margin: 20px 0; }\n    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }\n    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>¡Bienvenido/a, {{ $('Nuevo Cliente (Formulario)').item.json['Nombre Completo'].split(' ')[0] }}! 🎉</h1>\n    </div>\n    <div class=\"content\">\n      <p>Estamos emocionados de tenerte como parte de nuestra comunidad.</p>\n      \n      <div class=\"highlight\">\n        <h3>📋 Detalles de tu cuenta:</h3>\n        <ul>\n          <li><strong>ID Cliente:</strong> {{ $('Preparar Datos del Cliente').item.json.clientId }}</li>\n          <li><strong>Plan:</strong> {{ $('Preparar Datos del Cliente').item.json.planType }}</li>\n          <li><strong>Fecha de inicio:</strong> {{ $now.format('DD/MM/YYYY') }}</li>\n        </ul>\n      </div>\n      \n      <h3>🚀 Próximos pasos:</h3>\n      <ol>\n        <li>Revisa el email de facturación que recibirás a continuación</li>\n        <li>Completa tu perfil en la plataforma</li>\n        <li>Explora nuestros recursos de ayuda</li>\n        <li>Agenda una llamada de onboarding si lo deseas</li>\n      </ol>\n      \n      <p style=\"text-align: center;\">\n        <a href=\"https://tuempresa.com/empezar\" class=\"button\">Comenzar Ahora</a>\n      </p>\n      \n      <p>Si tienes alguna pregunta, no dudes en responder a este email. Nuestro equipo estará encantado de ayudarte.</p>\n      \n      <p>¡Gracias por confiar en nosotros!</p>\n      \n      <p><strong>El equipo de Tu Empresa</strong></p>\n    </div>\n    <div class=\"footer\">\n      <p>Este es un email automático. Por favor no respondas a esta dirección.</p>\n      <p>&copy; 2025 Tu Empresa. Todos los derechos reservados.</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP - Email Empresarial"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000005",
+      "name": "Generar Datos de Factura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Generar datos completos de la factura\nconst clientData = $('Nuevo Cliente (Formulario)').first().json;\nconst processedData = $('Preparar Datos del Cliente').first().json;\n\nconst today = new Date();\nconst dueDate = new Date(today);\ndueDate.setDate(today.getDate() + 15);\n\n// Calcular impuestos (ejemplo: IVA 21%)\nconst subtotal = processedData.planPrice;\nconst taxRate = 0.21;\nconst taxAmount = subtotal * taxRate;\nconst total = subtotal + taxAmount;\n\n// Generar líneas de factura\nconst invoiceItems = [\n  {\n    description: `Plan ${processedData.planType} - Primer mes`,\n    quantity: 1,\n    unitPrice: subtotal,\n    amount: subtotal\n  }\n];\n\n// Crear objeto de factura completo\nconst invoice = {\n  invoiceNumber: processedData.invoiceNumber,\n  invoiceDate: today.toISOString().split('T')[0],\n  dueDate: processedData.paymentDueDate,\n  \n  // Datos del cliente\n  client: {\n    id: processedData.clientId,\n    name: clientData['Nombre Completo'],\n    email: clientData['Email'],\n    phone: clientData['Teléfono'] || 'No proporcionado',\n    company: clientData['Empresa'] || 'Particular'\n  },\n  \n  // Líneas de factura\n  items: invoiceItems,\n  \n  // Totales\n  subtotal: subtotal.toFixed(2),\n  taxRate: (taxRate * 100).toFixed(0),\n  taxAmount: taxAmount.toFixed(2),\n  total: total.toFixed(2),\n  \n  // Información de pago\n  paymentMethod: 'Transferencia bancaria / Tarjeta',\n  paymentStatus: 'Pendiente',\n  \n  // Notas\n  notes: 'Pago dentro de 15 días. Gracias por su confianza.'\n};\n\nreturn { json: invoice };"
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000006",
+      "name": "Email con Factura",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1120, 400],
+      "parameters": {
+        "fromEmail": "facturacion@tuempresa.com",
+        "toEmail": "={{ $json.client.email }}",
+        "subject": "Factura {{ $json.invoiceNumber }} - Tu Empresa",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 700px; margin: 0 auto; padding: 20px; }\n    .invoice-header { background: #2c3e50; color: white; padding: 30px; text-align: center; }\n    .invoice-details { background: #ecf0f1; padding: 20px; margin: 20px 0; }\n    .invoice-table { width: 100%; border-collapse: collapse; margin: 20px 0; }\n    .invoice-table th { background: #34495e; color: white; padding: 12px; text-align: left; }\n    .invoice-table td { padding: 12px; border-bottom: 1px solid #ddd; }\n    .totals { text-align: right; margin: 20px 0; }\n    .totals-row { padding: 8px 0; }\n    .total-final { font-size: 20px; font-weight: bold; color: #27ae60; }\n    .payment-info { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }\n    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"invoice-header\">\n      <h1>FACTURA</h1>\n      <p>{{ $json.invoiceNumber }}</p>\n    </div>\n    \n    <div class=\"invoice-details\">\n      <table style=\"width: 100%;\">\n        <tr>\n          <td style=\"width: 50%;\">\n            <h3>Emitido a:</h3>\n            <p>\n              <strong>{{ $json.client.name }}</strong><br>\n              {{ $json.client.company }}<br>\n              Email: {{ $json.client.email }}<br>\n              Teléfono: {{ $json.client.phone }}\n            </p>\n          </td>\n          <td style=\"width: 50%; text-align: right;\">\n            <h3>Detalles:</h3>\n            <p>\n              <strong>Fecha:</strong> {{ $now.format('DD/MM/YYYY') }}<br>\n              <strong>Vencimiento:</strong> {{ $json.dueDate }}<br>\n              <strong>ID Cliente:</strong> {{ $json.client.id }}<br>\n              <strong>Estado:</strong> <span style=\"color: #e74c3c;\">{{ $json.paymentStatus }}</span>\n            </p>\n          </td>\n        </tr>\n      </table>\n    </div>\n    \n    <table class=\"invoice-table\">\n      <thead>\n        <tr>\n          <th>Descripción</th>\n          <th style=\"text-align: center;\">Cantidad</th>\n          <th style=\"text-align: right;\">Precio Unit.</th>\n          <th style=\"text-align: right;\">Total</th>\n        </tr>\n      </thead>\n      <tbody>\n        {{ $json.items.map(item => `\n        <tr>\n          <td>${item.description}</td>\n          <td style=\"text-align: center;\">${item.quantity}</td>\n          <td style=\"text-align: right;\">$${item.unitPrice.toFixed(2)}</td>\n          <td style=\"text-align: right;\">$${item.amount.toFixed(2)}</td>\n        </tr>\n        `).join('') }}\n      </tbody>\n    </table>\n    \n    <div class=\"totals\">\n      <div class=\"totals-row\">\n        <span>Subtotal:</span> <strong>${{ $json.subtotal }}</strong>\n      </div>\n      <div class=\"totals-row\">\n        <span>IVA ({{ $json.taxRate }}%):</span> <strong>${{ $json.taxAmount }}</strong>\n      </div>\n      <div class=\"totals-row total-final\">\n        <span>TOTAL:</span> <strong>${{ $json.total }}</strong>\n      </div>\n    </div>\n    \n    <div class=\"payment-info\">\n      <h3>💳 Información de Pago</h3>\n      <p><strong>Método de pago:</strong> {{ $json.paymentMethod }}</p>\n      <p><strong>Fecha límite:</strong> {{ $json.dueDate }}</p>\n      <p>Por favor, realiza el pago antes de la fecha de vencimiento para evitar interrupciones en el servicio.</p>\n      <p style=\"margin-top: 15px;\">\n        <a href=\"https://tuempresa.com/pagar/{{ $json.invoiceNumber }}\" style=\"display: inline-block; background: #27ae60; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;\">Pagar Ahora</a>\n      </p>\n    </div>\n    \n    <p><strong>Notas:</strong> {{ $json.notes }}</p>\n    \n    <div class=\"footer\">\n      <p><strong>Tu Empresa S.A.</strong></p>\n      <p>Dirección de la empresa | Tel: +34 123 456 789 | Email: facturacion@tuempresa.com</p>\n      <p>CIF: B12345678 | Registro Mercantil de Madrid, Tomo 1234, Folio 56, Hoja M-78910</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP - Email Empresarial"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000007",
+      "name": "Esperar 7 días",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1340, 400],
+      "webhookId": "payment-reminder-wait-webhook",
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000008",
+      "name": "Recordatorio de Pago",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1560, 400],
+      "parameters": {
+        "fromEmail": "facturacion@tuempresa.com",
+        "toEmail": "={{ $('Generar Datos de Factura').item.json.client.email }}",
+        "subject": "💰 Recordatorio: Factura {{ $('Generar Datos de Factura').item.json.invoiceNumber }} pendiente",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; }\n    .header { background: #f39c12; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }\n    .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; }\n    .reminder-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }\n    .button { display: inline-block; background: #27ae60; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }\n    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h2>💰 Recordatorio de Pago</h2>\n    </div>\n    <div class=\"content\">\n      <p>Hola {{ $('Nuevo Cliente (Formulario)').item.json['Nombre Completo'].split(' ')[0] }},</p>\n      \n      <p>Este es un recordatorio amistoso de que tienes una factura pendiente de pago:</p>\n      \n      <div class=\"reminder-box\">\n        <h3>Detalles de la factura:</h3>\n        <ul>\n          <li><strong>Número:</strong> {{ $('Generar Datos de Factura').item.json.invoiceNumber }}</li>\n          <li><strong>Importe:</strong> ${{ $('Generar Datos de Factura').item.json.total }}</li>\n          <li><strong>Fecha de vencimiento:</strong> {{ $('Generar Datos de Factura').item.json.dueDate }}</li>\n          <li><strong>Días restantes:</strong> {{ Math.ceil((new Date($('Generar Datos de Factura').item.json.dueDate) - new Date()) / (1000 * 60 * 60 * 24)) }} días</li>\n        </ul>\n      </div>\n      \n      <p>Si ya has realizado el pago, por favor ignora este mensaje. Si tienes alguna pregunta o necesitas una extensión, no dudes en contactarnos.</p>\n      \n      <p style=\"text-align: center;\">\n        <a href=\"https://tuempresa.com/pagar/{{ $('Generar Datos de Factura').item.json.invoiceNumber }}\" class=\"button\">Pagar Ahora</a>\n      </p>\n      \n      <p>Gracias por tu atención.</p>\n      \n      <p><strong>El equipo de Facturación<br>Tu Empresa</strong></p>\n    </div>\n    <div class=\"footer\">\n      <p>¿Necesitas ayuda? Responde a este email o llámanos al +34 123 456 789</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP - Email Empresarial"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000009",
+      "name": "Esperar 3 días más",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1340, 600],
+      "webhookId": "follow-up-wait-webhook",
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000010",
+      "name": "Alerta de Seguimiento (Email Interno)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1560, 600],
+      "parameters": {
+        "fromEmail": "sistema@tuempresa.com",
+        "toEmail": "ventas@tuempresa.com",
+        "subject": "🔔 SEGUIMIENTO REQUERIDO: Cliente {{ $('Nuevo Cliente (Formulario)').item.json['Nombre Completo'] }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 700px; margin: 0 auto; padding: 20px; }\n    .header { background: #e74c3c; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }\n    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }\n    .alert-box { background: #fff; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; }\n    .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }\n    .info-table td { padding: 10px; border-bottom: 1px solid #ddd; }\n    .info-table td:first-child { font-weight: bold; width: 200px; background: #ecf0f1; }\n    .action-items { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h2>🔔 Alerta de Seguimiento de Cliente</h2>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-box\">\n        <h3>⏰ Acción Requerida</h3>\n        <p>Han pasado <strong>10 días</strong> desde el onboarding del siguiente cliente. Es momento de hacer seguimiento.</p>\n      </div>\n      \n      <h3>📋 Información del Cliente:</h3>\n      <table class=\"info-table\">\n        <tr>\n          <td>ID Cliente</td>\n          <td>{{ $('Preparar Datos del Cliente').item.json.clientId }}</td>\n        </tr>\n        <tr>\n          <td>Nombre</td>\n          <td>{{ $('Nuevo Cliente (Formulario)').item.json['Nombre Completo'] }}</td>\n        </tr>\n        <tr>\n          <td>Email</td>\n          <td>{{ $('Nuevo Cliente (Formulario)').item.json['Email'] }}</td>\n        </tr>\n        <tr>\n          <td>Teléfono</td>\n          <td>{{ $('Nuevo Cliente (Formulario)').item.json['Teléfono'] || 'No proporcionado' }}</td>\n        </tr>\n        <tr>\n          <td>Empresa</td>\n          <td>{{ $('Nuevo Cliente (Formulario)').item.json['Empresa'] || 'Particular' }}</td>\n        </tr>\n        <tr>\n          <td>Plan Contratado</td>\n          <td>{{ $('Preparar Datos del Cliente').item.json.planType }} (${{ $('Preparar Datos del Cliente').item.json.planPrice }}/mes)</td>\n        </tr>\n        <tr>\n          <td>Fecha de Onboarding</td>\n          <td>{{ $('Preparar Datos del Cliente').item.json.onboardingDate }}</td>\n        </tr>\n        <tr>\n          <td>Factura</td>\n          <td>{{ $('Generar Datos de Factura').item.json.invoiceNumber }} - Vencimiento: {{ $('Generar Datos de Factura').item.json.dueDate }}</td>\n        </tr>\n        <tr>\n          <td>Notas Iniciales</td>\n          <td>{{ $('Nuevo Cliente (Formulario)').item.json['Notas Adicionales'] || 'Sin notas' }}</td>\n        </tr>\n      </table>\n      \n      <div class=\"action-items\">\n        <h3>✅ Acciones Sugeridas:</h3>\n        <ul>\n          <li><strong>Verificar estado de pago</strong> - Comprobar si la factura ha sido pagada</li>\n          <li><strong>Llamada de seguimiento</strong> - Contactar al cliente para ver cómo va su onboarding</li>\n          <li><strong>Revisar uso de la plataforma</strong> - Verificar si el cliente está utilizando el servicio</li>\n          <li><strong>Identificar bloqueos</strong> - Preguntar si necesita ayuda o tiene dudas</li>\n          <li><strong>Oportunidad de upsell</strong> - Evaluar si el cliente podría beneficiarse de un plan superior</li>\n        </ul>\n      </div>\n      \n      <h3>📊 Timeline de Acciones Automáticas:</h3>\n      <ul>\n        <li>✅ Día 0: Formulario completado y email de bienvenida enviado</li>\n        <li>✅ Día 0: Factura generada y enviada</li>\n        <li>✅ Día 7: Recordatorio de pago enviado</li>\n        <li>🔔 Día 10: <strong>Seguimiento manual requerido (HOY)</strong></li>\n        <li>📅 Día 15: Vencimiento de pago</li>\n      </ul>\n      \n      <p style=\"margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;\">\n        <strong>Nota:</strong> Esta es una alerta automática generada por el sistema de onboarding. \n        Por favor, registra las acciones tomadas en el CRM.\n      </p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP - Email Empresarial"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-000000000011",
+      "name": "Actualizar Estado Final",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1780, 500],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE",
+          "mode": "url",
+          "__regex": "https://docs.google.com/spreadsheets/d/([0-9a-zA-Z-_]+)(?:/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Clientes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Seguimiento Manual Requerido",
+            "Última Actualización": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}"
+          }
+        },
+        "options": {
+          "lookupColumn": "ID Cliente",
+          "lookupValue": "={{ $('Preparar Datos del Cliente').item.json.clientId }}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Clientes"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Nuevo Cliente (Formulario)": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos del Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos del Cliente": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Email de Bienvenida",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generar Datos de Factura",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Esperar 3 días más",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Datos de Factura": {
+      "main": [
+        [
+          {
+            "node": "Email con Factura",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email con Factura": {
+      "main": [
+        [
+          {
+            "node": "Esperar 7 días",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 7 días": {
+      "main": [
+        [
+          {
+            "node": "Recordatorio de Pago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 3 días más": {
+      "main": [
+        [
+          {
+            "node": "Alerta de Seguimiento (Email Interno)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recordatorio de Pago": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Estado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerta de Seguimiento (Email Interno)": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Estado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-17T10:00:00.000Z",
+      "updatedAt": "2025-01-17T10:00:00.000Z",
+      "id": "tag-onboarding",
+      "name": "Onboarding"
+    },
+    {
+      "createdAt": "2025-01-17T10:00:00.000Z",
+      "updatedAt": "2025-01-17T10:00:00.000Z",
+      "id": "tag-automatizacion",
+      "name": "Automatización"
+    },
+    {
+      "createdAt": "2025-01-17T10:00:00.000Z",
+      "updatedAt": "2025-01-17T10:00:00.000Z",
+      "id": "tag-clientes",
+      "name": "Clientes"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "your-instance-id"
+  },
+  "id": "workflow-client-onboarding-automation",
+  "versionId": "version-id-unique",
+  "active": false,
+  "createdAt": "2025-01-17T10:00:00.000Z",
+  "updatedAt": "2025-01-17T10:00:00.000Z"
+}
