@@ -1,0 +1,630 @@
+{
+  "name": "🤖 Angie - Asistente IA (CORREGIDO)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "d3689da0-6a71-4460-adc9-4336bb297cc2",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -128,
+        960
+      ],
+      "webhookId": "322dce18-f93e-4f86-b9b1-3305519b7834",
+      "typeVersion": 1,
+      "credentials": {
+        "telegramApi": {
+          "id": "V96F1PRnwlqhcOjv",
+          "name": "Telegram Asistente Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "chatInput",
+              "stringValue": "={{ $json?.message?.text || \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5e5fa8d2-7cf5-49bf-a48d-d0302e3661f4",
+      "name": "Preparar Input",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        80,
+        960
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a0bf9719-4272-46f6-ab3b-eda6f7b44fd8",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1ce1ba8-6af7-4fc2-8426-3214d15735d1",
+      "name": "¿Es Voz?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        240,
+        960
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "9ed085ef-d53d-498a-b1c4-783abeb75d2e",
+      "name": "Obtener Audio",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        416,
+        960
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "b7c260da-d33c-4613-9805-bbc7bf566628",
+      "credentials": {
+        "telegramApi": {
+          "id": "V96F1PRnwlqhcOjv",
+          "name": "Telegram Asistente Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "b0e94580-d7f5-4ca1-9f0f-b6e3c4f07843",
+      "name": "Convertir Voz a Texto",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        656,
+        960
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "openAiApi": {
+          "id": "5AnWURrBUTAR7uLp",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Preparar Input').first().json.chatInput }}",
+        "options": {
+          "systemMessage": "Eres Angie, asistente virtual inteligente de IA Avanza con capacidades avanzadas de planificación.\n\n📅 FECHA Y HORA ACTUAL: {{ $now.format('DD/MM/YYYY HH:mm') }}\n📍 UBICACIÓN: Toledo, España\n🏢 EMPRESA: IA Avanza - Transformación Digital\n\n===================\n⚡ TUS CAPACIDADES\n===================\n\nGESTIÓN DE AGENDA:\n- Ver citas y eventos programados\n- Crear nuevas citas en el calendario\n- Modificar citas existentes\n- Cancelar eventos\n- Buscar disponibilidad\n\nGESTIÓN DE TAREAS:\n- Consultar tareas pendientes\n- Ver tareas por prioridad o fecha\n- Buscar tareas específicas\n\nGESTIÓN DE CLIENTES:\n- Buscar información de clientes\n- Ver historial de interacciones\n- Consultar proyectos activos por cliente\n\nGESTIÓN FINANCIERA:\n- Consultar facturas (pendientes, cobradas, vencidas)\n- Ver presupuestos y ventas\n\nCOMUNICACIONES:\n- Leer emails no leídos de Gmail\n- Buscar información de contacto\n\n===================\n📋 COMANDOS RÁPIDOS\n===================\n\n/hoy → Resumen del día (citas + tareas urgentes)\n/semana → Vista semanal\n/pendientes → Tareas y facturas pendientes\n/cliente [nombre] → Información de cliente\n/ayuda → Listar todos los comandos\n\n===================\n💡 INSTRUCCIONES\n===================\n\n1. **Sé proactiva**: Ofrece información relevante sin que la pidan\n2. **Sé clara**: Usa formato Markdown para mejor legibilidad\n3. **Sé precisa**: Verifica datos antes de responder\n4. **Sé útil**: Sugiere acciones siguientes\n\nFORMATO DE RESPUESTAS:\n\nPara citas del día:\n📅 **CITAS HOY (DD/MM)**\n━━━━━━━━━━━━━━\n🕐 HH:MM - Cliente/Asunto\n🕐 HH:MM - Cliente/Asunto\n\nPara tareas:\n📋 **TAREAS PENDIENTES**\n━━━━━━━━━━━━━━\n🔴 Urgente: [tarea]\n🟡 Importante: [tarea]\n\nPara facturas:\n💰 **FACTURAS**\n━━━━━━━━━━━━━━\n⚠️ Pendientes: X facturas - X,XXX€\n✅ Cobradas este mes: X,XXX€\n\n===================\n⚠️ IMPORTANTE\n===================\n\n- Siempre usa el formato YYYY-MM-DDTHH:mm:ss para fechas en herramientas\n- Confirma antes de eliminar o modificar datos\n- Si no estás segura, pregunta antes de ejecutar\n- Usa las herramientas apropiadas para cada tarea\n\n---\n¡Lista para ayudarte! ¿Qué necesitas?"
+        }
+      },
+      "id": "6b26c5e8-3381-455f-a968-08ceb01db876",
+      "name": "Angie - Asistente IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        896,
+        960
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "b3bd266e-d9c0-405d-826e-a98998d1b9d2",
+      "name": "Responder Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1360,
+        960
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "79aee69e-6037-4ade-88d7-3128455e820e",
+      "credentials": {
+        "telegramApi": {
+          "id": "V96F1PRnwlqhcOjv",
+          "name": "Telegram Asistente Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bb39ec85-6166-4074-b196-00ad6b254515",
+      "name": "OpenAI GPT-4",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        672,
+        1280
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "5AnWURrBUTAR7uLp",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').first().json.message.from.id }}"
+      },
+      "id": "4646a191-6209-4a4f-97ec-c278eedb8c81",
+      "name": "Memoria de Conversación",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        800,
+        1280
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "e6973ad750b1dde9d533de9f8d26c21ac063837346dcf9ed573ea0605270a392@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "IA AVANZA - Agenda citas"
+        },
+        "options": {
+          "timeMin": "={{ $fromAI(\"date\", \"Fecha desde la cual buscar eventos en formato YYYY-MM-DDTHH:mm:ss. Si es 'hoy' usa la fecha actual.\") }}",
+          "timeMax": "={{ $fromAI(\"date_end\", \"Fecha hasta la cual buscar eventos en formato YYYY-MM-DDTHH:mm:ss (opcional)\") }}"
+        }
+      },
+      "id": "d974bf95-6570-46f3-a230-18a55618eb93",
+      "name": "TOOL: Ver Citas",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1056,
+        1248
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "e6973ad750b1dde9d533de9f8d26c21ac063837346dcf9ed573ea0605270a392@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "IA AVANZA - Agenda citas"
+        },
+        "start": "={{ $fromAI(\"start\", \"Fecha y hora de inicio en formato YYYY-MM-DDTHH:mm:ss\") }}",
+        "end": "={{ $fromAI(\"end\", \"Fecha y hora de fin en formato YYYY-MM-DDTHH:mm:ss\") }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI(\"title\", \"Título del evento\") }}",
+          "description": "={{ $fromAI(\"description\", \"Descripción del evento (opcional)\") || '' }}",
+          "location": "={{ $fromAI(\"location\", \"Ubicación (opcional)\") || '' }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        1360
+      ],
+      "id": "026827c3-d46d-4574-8fa7-066e9da2ad2a",
+      "name": "TOOL: Crear Evento",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "e6973ad750b1dde9d533de9f8d26c21ac063837346dcf9ed573ea0605270a392@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "IA AVANZA - Agenda citas"
+        },
+        "eventId": "={{ $fromAI('event_id', 'ID del evento a modificar') }}",
+        "updateFields": {
+          "start": "={{ $fromAI(\"start\", \"Nueva fecha/hora de inicio YYYY-MM-DDTHH:mm:ss (opcional)\") }}",
+          "end": "={{ $fromAI(\"end\", \"Nueva fecha/hora de fin YYYY-MM-DDTHH:mm:ss (opcional)\") }}",
+          "summary": "={{ $fromAI('title', 'Nuevo título (opcional)') }}",
+          "description": "={{ $fromAI('description', 'Nueva descripción (opcional)') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        1440
+      ],
+      "id": "c260d412-0e36-4c73-9ba2-fd36224b6b3b",
+      "name": "TOOL: Modificar Evento",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "e6973ad750b1dde9d533de9f8d26c21ac063837346dcf9ed573ea0605270a392@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "IA AVANZA - Agenda citas"
+        },
+        "eventId": "={{ $fromAI('event_id', 'ID del evento a eliminar') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        1456
+      ],
+      "id": "dd2915ad-b9ab-4008-862b-ebb86a596ba1",
+      "name": "TOOL: Eliminar Cita",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "5sk9oCJb128uQvPP",
+          "name": "Google Calendar Tareas AV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Buscar, consultar y listar información de clientes de IA Avanza. Usa cuando necesites datos de clientes, contactos o historial. Ejemplos: 'Busca el cliente TechCorp', 'Info de todos los clientes', 'Contacto de María'.",
+        "databaseId": "={{ 746861 }}",
+        "tableId": "={{ 1437063 }}",
+        "additionalOptions": {}
+      },
+      "type": "n8n-nodes-base.baserowTool",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        1168
+      ],
+      "id": "82018b16-fde7-479a-a8e1-b6939ab20315",
+      "name": "TOOL: Clientes",
+      "credentials": {
+        "baserowApi": {
+          "id": "tVPqBaFLk6DFSC9K",
+          "name": "Sistema_AV_n8n_baserrow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Consultar tareas pendientes, urgentes o completadas. Usa para '¿Qué tareas tengo?', 'tareas urgentes', 'tareas de hoy', 'tareas pendientes'. Devuelve información de tareas con estado, prioridad y fechas.",
+        "databaseId": "={{ 746994 }}",
+        "tableId": "={{ 1437062 }}",
+        "additionalOptions": {}
+      },
+      "id": "9c01cce2-94c9-4555-9a18-b0d04a21e21c",
+      "name": "TOOL: Tareas",
+      "type": "n8n-nodes-base.baserowTool",
+      "position": [
+        1184,
+        1360
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "baserowApi": {
+          "id": "tVPqBaFLk6DFSC9K",
+          "name": "Sistema_AV_n8n_baserrow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Buscar facturas emitidas, pendientes de cobro o cobradas. Usa para consultas sobre facturación, cobros y pagos. Ejemplos: 'Facturas pendientes', 'Facturas del mes', 'Busca factura 2025-001'.",
+        "databaseId": "={{ 746862 }}",
+        "tableId": "={{ 1437382 }}",
+        "additionalOptions": {}
+      },
+      "type": "n8n-nodes-base.baserowTool",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        1456
+      ],
+      "id": "c5ca15f3-bebe-424a-948d-6aa74be787ba",
+      "name": "TOOL: Facturas",
+      "credentials": {
+        "baserowApi": {
+          "id": "tVPqBaFLk6DFSC9K",
+          "name": "Sistema_AV_n8n_baserrow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "labelIds": [
+            "INBOX",
+            "UNREAD"
+          ],
+          "readStatus": "unread",
+          "receivedAfter": "={{ $fromAI(\"date\", \"Fecha desde la cual buscar emails en formato YYYY-MM-DDTHH:mm:ss. Si es 'hoy' usa la fecha actual.\") }}"
+        }
+      },
+      "id": "043cf840-6834-4326-bca4-c3c47b85a4d9",
+      "name": "TOOL: Ver Emails",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        912,
+        1280
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "44c79830-e46e-4701-bf97-8d318392b615",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vKjhOSKj6pdWTthh",
+          "name": "Gmail_OAuth_n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Angie - Asistente IA Corregido\n\n### ✅ Cambios Aplicados:\n\n1. **System Message optimizado** - Sin texto extra\n2. **8 herramientas esenciales** - Reducido de 15+\n3. **Descripciones mejoradas** - Claras y específicas\n4. **Flujo simplificado** - Eliminada planificación inteligente del flujo principal\n5. **Parámetros $fromAI** - Simplificados\n\n### 📋 Herramientas Activas:\n- Ver Citas (Google Calendar)\n- Crear Evento (Google Calendar)\n- Modificar Evento (Google Calendar)\n- Eliminar Cita (Google Calendar)\n- Clientes (Baserow)\n- Tareas (Baserow)\n- Facturas (Baserow)\n- Ver Emails (Gmail)\n\n### 🧪 Pruebas Recomendadas:\n1. \"Hola Angie\" - Test básico\n2. \"¿Qué citas tengo hoy?\" - Test Google Calendar\n3. \"Muéstrame tareas pendientes\" - Test Baserow\n4. \"/hoy\" - Test comando rápido",
+        "height": 598,
+        "width": 463,
+        "color": 3
+      },
+      "id": "0fda9701-d90e-431a-b1d9-dddabbff5956",
+      "name": "INSTRUCCIONES",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -260,
+        740
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Input": {
+      "main": [
+        [
+          {
+            "node": "¿Es Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Voz?": {
+      "main": [
+        [
+          {
+            "node": "Obtener Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Audio": {
+      "main": [
+        [
+          {
+            "node": "Convertir Voz a Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convertir Voz a Texto": {
+      "main": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Angie - Asistente IA": {
+      "main": [
+        [
+          {
+            "node": "Responder Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria de Conversación": {
+      "ai_memory": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Ver Citas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Crear Evento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Modificar Evento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Eliminar Cita": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Clientes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Tareas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Facturas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL: Ver Emails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Angie - Asistente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "meta": {
+    "instanceId": "116dbfb696b8401ae2ef262c10b95b0dfbe4f8c993465d954c07a926e9b05803"
+  },
+  "id": "angie-assistant-corregido",
+  "active": false
+}
